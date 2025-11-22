@@ -105,15 +105,21 @@ export const rejectDeliverer = async (req, res, next) => {
 
 export const getAllUsers = async (req, res, next) => {
   try {
-    const { role, status } = req.query;
+    const { role, status, approvalStatus } = req.query;
     const filter = {};
+    
+    // Filter by user role
     if (role) filter.role = role;
+    
+    // Filter by user status (active/inactive)
     if (status) filter.status = status;
 
-    const users = await User.find(filter)
+    // Get all users matching the filter
+    let users = await User.find(filter)
       .select("-password")
       .sort({ createdAt: -1 });
 
+    // Get profiles for all users
     const usersWithProfiles = await Promise.all(
       users.map(async (user) => {
         let profile = null;
@@ -140,10 +146,40 @@ export const getAllUsers = async (req, res, next) => {
       })
     );
 
+    // Apply approval status filter if provided
+    let filteredUsers = usersWithProfiles;
+    if (approvalStatus) {
+      if (approvalStatus === "pending") {
+        // Filter for sellers/deliverers with pending status
+        filteredUsers = usersWithProfiles.filter((item) => {
+          if (item.user.role === "seller" || item.user.role === "deliverer") {
+            return item.profile && item.profile.status === "pending";
+          }
+          return false;
+        });
+      } else if (approvalStatus === "approved") {
+        // Filter for sellers/deliverers with approved status
+        filteredUsers = usersWithProfiles.filter((item) => {
+          if (item.user.role === "seller" || item.user.role === "deliverer") {
+            return item.profile && item.profile.status === "approved";
+          }
+          return false;
+        });
+      } else if (approvalStatus === "rejected") {
+        // Filter for sellers/deliverers with rejected status
+        filteredUsers = usersWithProfiles.filter((item) => {
+          if (item.user.role === "seller" || item.user.role === "deliverer") {
+            return item.profile && item.profile.status === "rejected";
+          }
+          return false;
+        });
+      }
+    }
+
     res.json({
       success: true,
-      count: usersWithProfiles.length,
-      data: usersWithProfiles,
+      count: filteredUsers.length,
+      data: filteredUsers,
     });
   } catch (error) {
     next(error);
