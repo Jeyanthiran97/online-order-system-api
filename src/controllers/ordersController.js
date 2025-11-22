@@ -143,7 +143,7 @@ export const getOrders = async (req, res, next) => {
 
 export const updateOrder = async (req, res, next) => {
   try {
-    const { status } = req.body;
+    const { status, assignedDelivererId } = req.body;
     const order = await Order.findById(req.params.id);
 
     if (!order) {
@@ -201,11 +201,40 @@ export const updateOrder = async (req, res, next) => {
     if (req.user.roles.includes('admin')) {
       if (status && ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].includes(status)) {
         order.status = status;
+        
+        if (assignedDelivererId && !order.assignedDelivererId) {
+          const Deliverer = (await import('../models/Deliverer.js')).default;
+          const deliverer = await Deliverer.findById(assignedDelivererId);
+          
+          if (!deliverer || deliverer.status !== 'approved') {
+            return res.status(400).json({
+              success: false,
+              error: 'Invalid or unapproved deliverer'
+            });
+          }
+          
+          order.assignedDelivererId = assignedDelivererId;
+          
+          const existingDelivery = await Delivery.findOne({ orderId: order._id });
+          if (!existingDelivery) {
+            await Delivery.create({
+              orderId: order._id,
+              delivererId: assignedDelivererId,
+              status: 'pending'
+            });
+          }
+        }
+        
         await order.save();
+
+        const populatedOrder = await Order.findById(order._id)
+          .populate('products.productId', 'name description price')
+          .populate('customerId', 'fullName phone address')
+          .populate('assignedDelivererId', 'fullName');
 
         return res.json({
           success: true,
-          data: order
+          data: populatedOrder
         });
       }
     }

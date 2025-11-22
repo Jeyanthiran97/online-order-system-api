@@ -58,17 +58,16 @@ export const registerSeller = async (req, res, next) => {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      const existingSeller = await Seller.findOne({ userId: existingUser._id });
+      if (existingSeller && existingSeller.status === 'pending') {
+        return res.status(400).json({
+          success: false,
+          error: 'Seller registration already pending'
+        });
+      }
       return res.status(400).json({
         success: false,
         error: 'Email already exists'
-      });
-    }
-
-    const existingSeller = await Seller.findOne({ userId: existingUser?._id });
-    if (existingSeller && existingSeller.status === 'pending') {
-      return res.status(400).json({
-        success: false,
-        error: 'Seller registration already pending'
       });
     }
 
@@ -99,17 +98,16 @@ export const registerDeliverer = async (req, res, next) => {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      const existingDeliverer = await Deliverer.findOne({ userId: existingUser._id });
+      if (existingDeliverer && existingDeliverer.status === 'pending') {
+        return res.status(400).json({
+          success: false,
+          error: 'Deliverer registration already pending'
+        });
+      }
       return res.status(400).json({
         success: false,
         error: 'Email already exists'
-      });
-    }
-
-    const existingDeliverer = await Deliverer.findOne({ userId: existingUser?._id });
-    if (existingDeliverer && existingDeliverer.status === 'pending') {
-      return res.status(400).json({
-        success: false,
-        error: 'Deliverer registration already pending'
       });
     }
 
