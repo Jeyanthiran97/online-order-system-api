@@ -11,7 +11,7 @@ import { requireRole } from "../middleware/roleMiddleware.js";
 const router = express.Router();
 
 // Admin only routes
-// GET /sellers?status=pending (optional filter for pending sellers)
+// GET /sellers?approvalStatus=pending&isActive=true&search=shop&sort=-createdAt&page=1&limit=20
 router.get("/", authenticate, requireRole("admin"), getAllSellers);
 router.get("/:id", authenticate, requireRole("admin"), getSellerById);
 
