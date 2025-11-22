@@ -4,34 +4,30 @@
 
 ## 1. Overview
 
-This PRD defines the requirements for an **Online Order System** following industry-standard best practices for authentication, multi-role access, and entity-based architecture. The system will be built using **Node.js, Express, MongoDB, and Mongoose**.
+This PRD defines the requirements for an **Online Order System** following industry-standard best practices for authentication, multi-role access, and entity-based architecture. The system is built using **Node.js, Express, MongoDB, and Mongoose** with full ESM (ES Module) pattern.
 
-## rules
+## Rules
 
-1. use ESM pattern full project (don't use CommonJs anywhere)
-   Eg: import express from 'express'
-2. don't use icon when response (code should be as human write code)
-3. setup all needed files to api implementation (.env, .gitignore...... etc)
-
-4. for each set of changes make git commit
-   for example:
-   complete step by step(
-   create server with console log,
-   then connect monogodb,
-   then create all routes with them controller,
-   finnaly implement authentication after complete all CRUD)
+1. Use ESM pattern throughout the project (no CommonJS)
+   - Example: `import express from 'express'`
+2. Don't use icons in responses (code should be human-readable)
+3. Setup all needed files for API implementation (.env, .gitignore, etc.)
+4. Make git commits for each set of changes
+5. Follow step-by-step implementation approach
 
 ---
 
 ## 2. Objective
 
 - Provide a scalable online order system with multiple user roles:
-  - Customer: Browse products, place orders
-  - Seller: Add products, manage orders
-  - Deliverer: Track deliveries, update delivery status
-  - Admin: Approve sellers/deliverers, manage analytics
-- Implement **multi-role authentication** and **entity-based routes**.
-- Ensure best practices in security, modularity, and maintainability.
+  - **Customer**: Browse products, place orders, manage profile
+  - **Seller**: Add products, manage orders, manage profile (requires admin approval)
+  - **Deliverer**: Track deliveries, update delivery status, manage profile (requires admin approval)
+  - **Admin**: Approve/reject sellers/deliverers, manage users, view analytics
+- Implement **multi-role authentication** with single role per user
+- Implement **entity-based routes** and controllers
+- Implement **filtering, sorting, and pagination** for all list endpoints
+- Ensure best practices in security, modularity, and maintainability
 
 ---
 
@@ -39,10 +35,10 @@ This PRD defines the requirements for an **Online Order System** following indus
 
 | Role      | Description             | Permissions                                                                                  |
 | --------- | ----------------------- | -------------------------------------------------------------------------------------------- |
-| Customer  | End-user placing orders | View products, Place orders, View order status, Profile management                           |
-| Seller    | Product owner           | Add/Edit/Delete products, View/manage orders, Profile management, Approve inventory requests |
-| Deliverer | Delivery agent          | View assigned deliveries, Update delivery status, Profile management                         |
-| Admin     | System administrator    | Approve/reject sellers & deliverers, Manage users, View analytics                            |
+| Customer  | End-user placing orders | View products (with filtering), Place orders, View own orders (with filtering), Cancel pending orders, Profile management |
+| Seller    | Product owner           | Add/Edit/Delete products, View/manage own products (with filtering), View/manage related orders (with filtering), Profile management (requires approval) |
+| Deliverer | Delivery agent          | View assigned deliveries, Update delivery status, Profile management (requires approval) |
+| Admin     | System administrator    | Approve/reject sellers & deliverers, Manage all users/customers/sellers/deliverers (with filtering), View analytics, Assign deliverers to orders |
 
 ---
 
@@ -53,101 +49,137 @@ This PRD defines the requirements for an **Online Order System** following indus
 ```
 users {
   _id (PK)
-  email (unique)
-  password (hashed)
-  roles: ['customer','seller','deliverer','admin']
-  status: 'active' | 'inactive'
+  email (unique, required, lowercase, validated)
+  password (hashed with bcrypt, required, minlength: 6)
+  role: 'customer' | 'seller' | 'deliverer' | 'admin' (required, default: 'customer')
+  isActive: Boolean (default: true)
   createdAt
   updatedAt
 }
 ```
+
+**Key Points:**
+- Single `role` field (not array) - one user can have only one role
+- `isActive` boolean instead of status string
+- Email must be unique across all users
+- Password is automatically hashed before saving
 
 ### Customers Collection
 
 ```
 customers {
   _id (PK)
-  userId (FK → users)
-  fullName
-  phone
-  address
+  userId (FK → users, unique, required)
+  fullName (required)
+  phone (required)
+  address (required)
+  approvalStatus: 'pending' | 'approved' | 'rejected' (default: 'approved')
+  reason (optional, for rejection)
+  verifiedAt (optional, timestamp when approved)
   createdAt
   updatedAt
 }
 ```
+
+**Key Points:**
+- Customers are approved by default
+- Approval status stored in profile, not in User model
 
 ### Sellers Collection
 
 ```
 sellers {
   _id (PK)
-  userId (FK → users)
-  shopName
-  documents
-  status: 'pending' | 'approved' | 'rejected'
-  reason
-  verifiedAt
+  userId (FK → users, unique, required)
+  shopName (required)
+  documents (array of strings, default: [])
+  approvalStatus: 'pending' | 'approved' | 'rejected' (default: 'pending')
+  reason (optional, for rejection)
+  verifiedAt (optional, timestamp when approved)
   createdAt
   updatedAt
 }
 ```
+
+**Key Points:**
+- Sellers require admin approval before they can login
+- Approval status stored in profile model
 
 ### Deliverers Collection
 
 ```
 deliverers {
   _id (PK)
-  userId (FK → users)
-  fullName
-  licenseNumber
-  NIC
-  status: 'pending' | 'approved' | 'rejected'
-  reason
-  verifiedAt
+  userId (FK → users, unique, required)
+  fullName (required)
+  licenseNumber (required)
+  NIC (required)
+  approvalStatus: 'pending' | 'approved' | 'rejected' (default: 'pending')
+  reason (optional, for rejection)
+  verifiedAt (optional, timestamp when approved)
   createdAt
   updatedAt
 }
 ```
+
+**Key Points:**
+- Deliverers require admin approval before they can login
+- Approval status stored in profile model
 
 ### Products Collection
 
 ```
 products {
   _id (PK)
-  sellerId (FK → sellers)
-  name
-  description
-  price
-  stock
+  sellerId (FK → sellers, required)
+  name (required)
+  description (optional)
+  price (required, min: 0)
+  stock (required, min: 0, default: 0)
+  category (optional, string)
+  rating (optional, min: 0, max: 5, default: 0)
   createdAt
   updatedAt
 }
 ```
+
+**Key Points:**
+- Added `category` and `rating` fields for better filtering
+- Stock is automatically decremented when order is placed
 
 ### Orders Collection
 
 ```
 orders {
   _id (PK)
-  customerId (FK → customers)
-  products: [{ productId, quantity, price }]
-  totalPrice
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
-  assignedDelivererId (FK → deliverers)
+  customerId (FK → customers, required)
+  products: [{
+    productId (FK → products, required)
+    quantity (required, min: 1)
+    price (required, min: 0)
+  }]
+  totalPrice (required, min: 0)
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled' (default: 'pending')
+  assignedDelivererId (FK → deliverers, optional)
   createdAt
   updatedAt
 }
 ```
+
+**Key Points:**
+- Products array stores snapshot of product details at time of order
+- Stock is decremented when order is created
+- Stock is restored when order is cancelled
 
 ### Deliveries Collection
 
 ```
 deliveries {
   _id (PK)
-  orderId (FK → orders)
-  delivererId (FK → deliverers)
-  status: 'pending' | 'in-transit' | 'delivered'
-  deliveryTime
+  orderId (FK → orders, required)
+  delivererId (FK → deliverers, required)
+  status: 'pending' | 'in-transit' | 'delivered' (default: 'pending')
+  deliveryTime (optional)
   createdAt
   updatedAt
 }
@@ -158,9 +190,13 @@ deliveries {
 ```
 analytics {
   _id (PK)
-  totalSales
-  totalOrders
-  salesBySeller: [{ sellerId, totalSales }]
+  totalSales (Number)
+  totalOrders (Number)
+  salesBySeller: [{
+    sellerId (FK → sellers)
+    shopName (String)
+    totalSales (Number)
+  }]
   createdAt
   updatedAt
 }
@@ -173,140 +209,464 @@ analytics {
 ### Auth Routes
 
 ```
-POST /auth/register/customer
-POST /auth/register/seller
-POST /auth/register/deliverer
-POST /auth/login
-```
-
-### Admin Routes
-
-```
-PATCH /admin/sellers/:id/approve
-PATCH /admin/sellers/:id/reject
-PATCH /admin/deliverers/:id/approve
-PATCH /admin/deliverers/:id/reject
-GET /admin/analytics
+POST /api/auth/register/customer
+POST /api/auth/register/seller
+POST /api/auth/register/deliverer
+POST /api/auth/login
+GET  /api/auth/me              (authenticated users)
+PATCH /api/auth/me             (authenticated users - update own profile)
 ```
 
 ### Products Routes
 
 ```
-POST /products       (seller only)
-GET /products        (public + customer + seller)
-GET /products/:id    (public + customer + seller)
-PATCH /products/:id  (seller only)
-DELETE /products/:id (seller only)
+POST   /api/products           (seller only, requires approval)
+GET    /api/products           (public/customer/seller - with filtering, sorting, pagination)
+GET    /api/products/:id      (public/customer/seller)
+PATCH  /api/products/:id       (seller only, own products)
+DELETE /api/products/:id       (seller only, own products)
 ```
+
+**Query Parameters for GET /api/products:**
+- `category` - Filter by category
+- `minPrice`, `maxPrice` - Price range filter
+- `minRating`, `maxRating` - Rating range filter
+- `availability` - "inStock" or "outOfStock" (for customers)
+- `stockStatus` - "low", "inStock", or "outOfStock" (for sellers)
+- `search` - Search by name or description
+- `sellerId` - Filter by seller ID (admin/public)
+- `sort` - Sort fields (e.g., "price,-rating", default: updatedAt descending)
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 20)
 
 ### Orders Routes
 
 ```
-POST /orders             (customer only)
-GET /orders              (customer: own orders, seller: related orders, deliverer: assigned deliveries)
-PATCH /orders/:id        (customer: cancel, admin/seller: confirm)
+POST   /api/orders             (customer only)
+GET    /api/orders             (role-based with filtering, sorting, pagination)
+PATCH  /api/orders/:id        (customer: cancel, seller/admin: confirm, admin: assign deliverer)
 ```
 
-### Deliveries Routes
+**Query Parameters for GET /api/orders:**
+- `status` - Filter by status (single or comma-separated: pending,confirmed,shipped,delivered,cancelled)
+- `customerId` - Filter by customer ID (admin only)
+- `sellerId` - Filter by seller ID (admin only)
+- `minTotalPrice`, `maxTotalPrice` - Total price range filter
+- `startDate`, `endDate` - Date range filter (ISO format: YYYY-MM-DD)
+- `search` - Search by customer name, phone, or order ID
+- `sort` - Sort fields (default: updatedAt descending)
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 10)
+
+**Role-based Access:**
+- **Customer**: Only sees their own orders
+- **Seller**: Only sees orders containing their products
+- **Deliverer**: Only sees assigned orders
+- **Admin**: Sees all orders
+
+### Users Routes (Admin Only)
 
 ```
-GET /deliveries           (deliverer: assigned deliveries)
-PATCH /deliveries/:id     (deliverer: update status)
+GET    /api/users              (with filtering, sorting, pagination)
+GET    /api/users/:id          (get user with profile)
 ```
 
-### Users / Profile Routes
+**Query Parameters for GET /api/users:**
+- `role` - Filter by role (customer, seller, deliverer, admin)
+- `isActive` - Filter by active status (true/false)
+- `approvalStatus` - Filter by profile approval status (pending, approved, rejected)
+- `search` - Search by email
+- `sort` - Sort fields (default: updatedAt descending)
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 20)
+
+### Customers Routes (Admin Only)
 
 ```
-GET /users/me            (any logged-in user)
-PATCH /users/me          (update profile)
+GET    /api/customers          (with filtering, sorting, pagination)
+GET    /api/customers/:id      (get customer by ID)
+```
+
+**Query Parameters for GET /api/customers:**
+- `approvalStatus` - Filter by approval status (pending, approved, rejected)
+- `isActive` - Filter by user active status (true/false)
+- `search` - Search by fullName, phone, or address
+- `sort` - Sort fields (default: updatedAt descending)
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 20)
+
+### Sellers Routes (Admin Only)
+
+```
+GET    /api/sellers            (with filtering, sorting, pagination)
+GET    /api/sellers/:id        (get seller by ID)
+PATCH  /api/sellers/:id/approve (approve seller)
+PATCH  /api/sellers/:id/reject  (reject seller)
+```
+
+**Query Parameters for GET /api/sellers:**
+- `approvalStatus` - Filter by approval status (pending, approved, rejected)
+- `isActive` - Filter by user active status (true/false)
+- `search` - Search by shopName
+- `sort` - Sort fields (default: updatedAt descending)
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 20)
+
+### Deliverers Routes (Admin Only)
+
+```
+GET    /api/deliverers         (with filtering, sorting, pagination)
+GET    /api/deliverers/:id     (get deliverer by ID)
+PATCH  /api/deliverers/:id/approve (approve deliverer)
+PATCH  /api/deliverers/:id/reject  (reject deliverer)
+```
+
+**Query Parameters for GET /api/deliverers:**
+- `approvalStatus` - Filter by approval status (pending, approved, rejected)
+- `isActive` - Filter by user active status (true/false)
+- `search` - Search by fullName, licenseNumber, or NIC
+- `sort` - Sort fields (default: updatedAt descending)
+- `page` - Page number (default: 1)
+- `limit` - Items per page (default: 20)
+
+### Deliveries Routes (Deliverer Only)
+
+```
+GET    /api/deliveries         (get assigned deliveries)
+PATCH  /api/deliveries/:id     (update delivery status)
+```
+
+### Analytics Routes (Admin Only)
+
+```
+GET    /api/analytics          (get system analytics)
 ```
 
 ---
 
 ## 6. Authentication & Authorization
 
-- JWT token-based authentication
-- Role-Based Access Control (RBAC) per route
-- Optional public access routes with `authOptional` middleware
-- Password hashing with bcrypt
-- Single users collection + multiple profile tables for multi-role support
+### Authentication
+
+- **JWT token-based authentication**
+- Token generated on login/registration
+- Token stored in `Authorization` header: `Bearer <token>`
+- Password hashing with `bcryptjs` (10 rounds)
+- Password comparison method in User model
+
+### Authorization
+
+- **Role-Based Access Control (RBAC)** per route
+- Middleware: `authenticate` - verifies JWT token
+- Middleware: `requireRole(...roles)` - checks user role
+- Middleware: `requireApprovedSeller` - ensures seller is approved
+- Middleware: `requireApprovedDeliverer` - ensures deliverer is approved
+- Middleware: `authOptional` - allows public access but attaches user if authenticated
+
+### User Model Structure
+
+- **Single role per user** (not array)
+- **isActive boolean** for account status (not string)
+- **Email uniqueness** enforced at database level
+- **Password hashing** via pre-save hook
 
 ---
 
 ## 7. Approval Workflow
 
-- Seller / Deliverer register → `status = pending`
-- Admin approves → `status = approved`, `verifiedAt` timestamp set
-- Admin rejects → `status = rejected`, reason logged
-- User can login only if approved (for seller/deliverer)
+### Seller Approval
+
+1. Seller registers → `approvalStatus = 'pending'` in Seller profile
+2. Admin reviews seller profile
+3. Admin approves → `approvalStatus = 'approved'`, `verifiedAt` set, `reason` cleared
+4. Admin rejects → `approvalStatus = 'rejected'`, `reason` set
+5. Seller can login only if `approvalStatus = 'approved'` and `isActive = true`
+
+### Deliverer Approval
+
+1. Deliverer registers → `approvalStatus = 'pending'` in Deliverer profile
+2. Admin reviews deliverer profile
+3. Admin approves → `approvalStatus = 'approved'`, `verifiedAt` set, `reason` cleared
+4. Admin rejects → `approvalStatus = 'rejected'`, `reason` set
+5. Deliverer can login only if `approvalStatus = 'approved'` and `isActive = true`
+
+### Customer Approval
+
+- Customers are **approved by default** (`approvalStatus = 'approved'`)
+- Admin can still reject customers if needed
+
+### Approval Endpoints
+
+- `PATCH /api/sellers/:id/approve` - Approve seller (admin only)
+- `PATCH /api/sellers/:id/reject` - Reject seller with reason (admin only)
+- `PATCH /api/deliverers/:id/approve` - Approve deliverer (admin only)
+- `PATCH /api/deliverers/:id/reject` - Reject deliverer with reason (admin only)
 
 ---
 
-## 8. Best Practices Applied
+## 8. Filtering, Sorting, and Pagination
 
-- Modular controller per entity
-- Entity-based routes
-- Partial updates via PATCH for approve/reject or updates
-- RESTful route conventions
-- Clean error handling
-- Prevent duplicate emails
-- Prevent multiple pending profiles for same role
-- Scalable to add more entities in future
+### Filtering
 
----
+All list endpoints support dynamic filtering based on query parameters:
+- **Products**: category, price range, rating range, availability, stock status, search
+- **Orders**: status, customer ID, seller ID, price range, date range, search
+- **Users/Customers/Sellers/Deliverers**: role, isActive, approvalStatus, search
 
-## 9. Project Folder Structure
+### Sorting
 
+- Default sorting: `updatedAt` descending (most recently updated first)
+- Custom sorting via `sort` query parameter
+- Multiple fields supported: `sort=price,-rating` (price ascending, rating descending)
+- Prefix `-` for descending order
+
+### Pagination
+
+- Default page: 1
+- Default limit varies by endpoint (Products: 20, Orders: 10, Users: 20)
+- Response includes:
+  - `count` - Number of items in current page
+  - `total` - Total number of items matching filters
+  - `totalPages` - Total number of pages
+  - `currentPage` - Current page number
+  - `data` - Array of items
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "count": 20,
+  "total": 100,
+  "totalPages": 5,
+  "currentPage": 1,
+  "data": [...]
+}
 ```
-/controllers
-  authController.js
-  productsController.js
-  ordersController.js
-  deliveriesController.js
-  analyticsController.js
-  usersController.js
-
-/routes
-  authRoutes.js
-  productsRoutes.js
-  ordersRoutes.js
-  deliveriesRoutes.js
-  analyticsRoutes.js
-  usersRoutes.js
-  index.js (import all routes here then use in server.js)
-
-/models
-  User.js
-  Customer.js
-  Seller.js
-  Deliverer.js
-  Product.js
-  Order.js
-  Delivery.js
-  Analytics.js
-
-/middlewares
-  authMiddleware.js
-  roleMiddleware.js
-  errorMiddleware.js (centralize all validation error by mongoose schema: user structure error message)
-
-/config
-  db.js
-  jwtConfig.js
-
-/server.js
-```
 
 ---
 
-## 10. Summary
+## 9. Best Practices Applied
+
+### Architecture
 
 - **Entity-based route + controller structure** for scalability
-- **Single users collection + multiple profiles** for multi-role authentication
-- **RBAC middleware** per route
-- **Public and login-required routes** supported
+- **Single role per user** (not array) for simplicity
+- **Approval status in profile models** (not in User model)
+- **Modular controllers** - each entity has its own controller
+- **Separation of concerns** - approval logic in entity-specific controllers
+
+### Code Quality
+
+- **ESM pattern** throughout (no CommonJS)
+- **RESTful route conventions**
+- **Partial updates via PATCH** for approve/reject or updates
+- **Clean error handling** with centralized error middleware
+- **Password hashing** via Mongoose pre-save hook
+- **Email uniqueness** enforced at schema level
+- **Input validation** via Mongoose schema validators
+
+### Security
+
+- **JWT token-based authentication**
+- **Role-based access control (RBAC)**
+- **Password hashing** with bcryptjs
+- **Token verification** on protected routes
 - **Approval workflow** for sellers and deliverers
-- **Best practices** applied for modular, production-ready code
+
+### Scalability
+
+- **Filtering, sorting, pagination** for all list endpoints
+- **Dynamic query building** based on query parameters
+- **Role-based data access** (users see only their data)
+- **Modular structure** - easy to add new entities
+- **Entity-specific controllers** - easy to maintain
+
+---
+
+## 10. Project Folder Structure
+
+```
+/
+├── .env
+├── .gitignore
+├── package.json
+├── online_order_system_prd.md
+├── DEMO.md
+└── src/
+    ├── server.js
+    ├── config/
+    │   ├── db.js
+    │   └── jwtConfig.js
+    ├── models/
+    │   ├── User.js
+    │   ├── Customer.js
+    │   ├── Seller.js
+    │   ├── Deliverer.js
+    │   ├── Product.js
+    │   ├── Order.js
+    │   ├── Delivery.js
+    │   └── Analytics.js
+    ├── controllers/
+    │   ├── authController.js
+    │   ├── productsController.js
+    │   ├── ordersController.js
+    │   ├── deliveriesController.js
+    │   ├── analyticsController.js
+    │   ├── usersController.js
+    │   ├── customerController.js
+    │   ├── sellerController.js
+    │   └── delivererController.js
+    ├── routes/
+    │   ├── authRoutes.js
+    │   ├── productsRoutes.js
+    │   ├── ordersRoutes.js
+    │   ├── deliveriesRoutes.js
+    │   ├── analyticsRoutes.js
+    │   ├── usersRoutes.js
+    │   ├── customersRoutes.js
+    │   ├── sellersRoutes.js
+    │   ├── deliverersRoutes.js
+    │   └── index.js
+    ├── middleware/
+    │   ├── authMiddleware.js
+    │   ├── roleMiddleware.js
+    │   └── errorMiddleware.js
+    └── seeders/
+        ├── adminSeeder.js
+        ├── sampleDataSeeder.js
+        └── clearData.js
+```
+
+---
+
+## 11. Seeders
+
+### Admin Seeder
+
+- Creates initial admin user
+- Email: `admin@gmail.com`
+- Password: `Admin@123`
+- Role: `admin`
+- Command: `npm run seed:admin`
+
+### Sample Data Seeder
+
+- Creates sample data for all entities:
+  - Customers (2)
+  - Sellers (2, approved)
+  - Deliverers (2, approved)
+  - Products (multiple)
+  - Orders (multiple)
+  - Deliveries (multiple)
+- Command: `npm run seed:sample`
+
+### Clear Data Script
+
+- Clears all data from database
+- Command: `npm run clear:data`
+
+### Combined Commands
+
+- `npm run seed:all` - Runs both admin and sample data seeders
+
+---
+
+## 12. Response Formats
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "data": { ... }
+}
+```
+
+### Paginated Response
+
+```json
+{
+  "success": true,
+  "count": 20,
+  "total": 100,
+  "totalPages": 5,
+  "currentPage": 1,
+  "data": [ ... ]
+}
+```
+
+### Error Response
+
+```json
+{
+  "success": false,
+  "error": "Error message"
+}
+```
+
+---
+
+## 13. Key Implementation Details
+
+### User Model
+
+- **Single role**: `role: String` (not array)
+- **Active status**: `isActive: Boolean` (not string)
+- **Password hashing**: Automatic via pre-save hook
+- **Email uniqueness**: Enforced at schema level
+
+### Profile Models
+
+- **Approval status**: Stored in profile models (Customer, Seller, Deliverer)
+- **Fields**: `approvalStatus`, `reason`, `verifiedAt`
+- **Default values**: Customers approved by default, Sellers/Deliverers pending by default
+
+### Filtering & Sorting
+
+- **Dynamic query building** based on query parameters
+- **Role-based filtering** - users see only their data
+- **Default sorting**: `updatedAt` descending
+- **Multi-field sorting** supported
+
+### Approval Logic
+
+- **Entity-specific controllers** handle approval/rejection
+- **Routes**: `/api/sellers/:id/approve`, `/api/sellers/:id/reject`, etc.
+- **Admin only** access for approval endpoints
+
+---
+
+## 14. Summary
+
+### Core Features
+
+- ✅ **Multi-role authentication** with single role per user
+- ✅ **Entity-based architecture** with modular controllers
+- ✅ **Approval workflow** for sellers and deliverers
+- ✅ **Filtering, sorting, and pagination** for all list endpoints
+- ✅ **Role-based access control (RBAC)**
+- ✅ **JWT token-based authentication**
+- ✅ **Password hashing** with bcryptjs
+- ✅ **Email uniqueness** enforcement
+- ✅ **Seeders** for development and testing
+
+### Architecture Highlights
+
+- **Single role per user** (simplified from multi-role)
+- **Approval status in profile models** (not in User model)
+- **isActive boolean** for account status (not string)
+- **Entity-specific controllers** for maintainability
+- **Dynamic filtering, sorting, pagination** for scalability
+- **Default sorting by updatedAt** (most recent first)
+
+### Production Ready
+
+- ✅ Error handling middleware
+- ✅ Input validation
+- ✅ Security best practices
+- ✅ Modular, maintainable code
+- ✅ Comprehensive documentation (PRD + DEMO.md)
 
 ---
 
