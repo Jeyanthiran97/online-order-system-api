@@ -4,7 +4,7 @@ import Seller from "../models/Seller.js";
 import Deliverer from "../models/Deliverer.js";
 
 const buildSortQuery = (sortParam) => {
-  if (!sortParam) return { createdAt: -1 };
+  if (!sortParam) return { updatedAt: -1 };
 
   const sortFields = {};
   const fields = sortParam.split(",");
@@ -45,8 +45,19 @@ export const getAllUsers = async (req, res, next) => {
       filter.email = { $regex: search, $options: "i" };
     }
 
-const buildSortQuery = (sortParam) => {
-  if (!sortParam) return { updatedAt: -1 };
+    // Build sort query
+    const sortQuery = buildSortQuery(sort);
+
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Get all users matching the filter
+    const total = await User.countDocuments(filter);
+    let users = await User.find(filter)
+      .select("-password")
+      .sort(sortQuery)
       .skip(skip)
       .limit(limit);
 
