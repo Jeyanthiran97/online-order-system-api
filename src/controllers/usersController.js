@@ -45,19 +45,8 @@ export const getAllUsers = async (req, res, next) => {
       filter.email = { $regex: search, $options: "i" };
     }
 
-    // Build sort query
-    const sortQuery = buildSortQuery(sort);
-
-    // Pagination
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
-
-    // Get all users matching the filter
-    const total = await User.countDocuments(filter);
-    let users = await User.find(filter)
-      .select("-password")
-      .sort(sortQuery)
+const buildSortQuery = (sortParam) => {
+  if (!sortParam) return { updatedAt: -1 };
       .skip(skip)
       .limit(limit);
 

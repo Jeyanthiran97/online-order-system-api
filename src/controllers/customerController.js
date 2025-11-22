@@ -2,7 +2,7 @@ import Customer from "../models/Customer.js";
 import User from "../models/User.js";
 
 const buildSortQuery = (sortParam) => {
-  if (!sortParam) return { createdAt: -1 };
+  if (!sortParam) return { updatedAt: -1 };
 
   const sortFields = {};
   const fields = sortParam.split(",");

@@ -206,7 +206,7 @@ const buildOrderQuery = async (req) => {
 };
 
 const buildSortQuery = (sortParam) => {
-  if (!sortParam) return { createdAt: -1 };
+  if (!sortParam) return { updatedAt: -1 };
 
   const sortFields = {};
   const fields = sortParam.split(",");
