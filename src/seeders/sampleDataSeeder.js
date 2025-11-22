@@ -21,14 +21,14 @@ const seedSampleData = async () => {
       email: 'customer1@example.com',
       password: 'Customer@123',
       role: 'customer',
-      status: 'active'
+      isActive: true
     });
 
     const customer2 = await User.create({
       email: 'customer2@example.com',
       password: 'Customer@123',
       role: 'customer',
-      status: 'active'
+      isActive: true
     });
 
     const customerProfile1 = await Customer.create({
@@ -52,21 +52,21 @@ const seedSampleData = async () => {
       email: 'seller1@example.com',
       password: 'Seller@123',
       role: 'seller',
-      status: 'active'
+      isActive: true
     });
 
     const seller2 = await User.create({
       email: 'seller2@example.com',
       password: 'Seller@123',
       role: 'seller',
-      status: 'active'
+      isActive: true
     });
 
     const sellerProfile1 = await Seller.create({
       userId: seller1._id,
       shopName: 'Tech Store',
       documents: ['license1.pdf', 'certificate1.pdf'],
-      status: 'approved',
+      approvalStatus: 'approved',
       verifiedAt: new Date()
     });
 
@@ -74,7 +74,7 @@ const seedSampleData = async () => {
       userId: seller2._id,
       shopName: 'Fashion Boutique',
       documents: ['license2.pdf', 'certificate2.pdf'],
-      status: 'approved',
+      approvalStatus: 'approved',
       verifiedAt: new Date()
     });
 
@@ -85,14 +85,14 @@ const seedSampleData = async () => {
       email: 'deliverer1@example.com',
       password: 'Deliverer@123',
       role: 'deliverer',
-      status: 'active'
+      isActive: true
     });
 
     const deliverer2 = await User.create({
       email: 'deliverer2@example.com',
       password: 'Deliverer@123',
       role: 'deliverer',
-      status: 'active'
+      isActive: true
     });
 
     const delivererProfile1 = await Deliverer.create({
@@ -100,7 +100,7 @@ const seedSampleData = async () => {
       fullName: 'Mike Johnson',
       licenseNumber: 'DL123456',
       NIC: 'NIC123456789',
-      status: 'approved',
+      approvalStatus: 'approved',
       verifiedAt: new Date()
     });
 
@@ -109,7 +109,7 @@ const seedSampleData = async () => {
       fullName: 'Sarah Williams',
       licenseNumber: 'DL789012',
       NIC: 'NIC987654321',
-      status: 'approved',
+      approvalStatus: 'approved',
       verifiedAt: new Date()
     });
 

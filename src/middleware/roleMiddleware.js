@@ -33,7 +33,7 @@ export const requireApprovedSeller = async (req, res, next) => {
     const Seller = (await import("../models/Seller.js")).default;
     const seller = await Seller.findOne({ userId: req.user._id });
 
-    if (!seller || seller.status !== "approved") {
+    if (!seller || seller.approvalStatus !== "approved") {
       return res.status(403).json({
         success: false,
         error: "Seller account not approved",
@@ -62,7 +62,7 @@ export const requireApprovedDeliverer = async (req, res, next) => {
     const Deliverer = (await import("../models/Deliverer.js")).default;
     const deliverer = await Deliverer.findOne({ userId: req.user._id });
 
-    if (!deliverer || deliverer.status !== "approved") {
+    if (!deliverer || deliverer.approvalStatus !== "approved") {
       return res.status(403).json({
         success: false,
         error: "Deliverer account not approved",

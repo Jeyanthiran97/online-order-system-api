@@ -4,7 +4,7 @@ import User from "../models/User.js";
 export const getAllCustomers = async (req, res, next) => {
   try {
     const customers = await Customer.find()
-      .populate("userId", "email role status createdAt")
+      .populate("userId", "email role isActive createdAt")
       .sort({ createdAt: -1 });
 
     res.json({
@@ -21,7 +21,7 @@ export const getCustomerById = async (req, res, next) => {
   try {
     const customer = await Customer.findById(req.params.id).populate(
       "userId",
-      "email role status createdAt"
+      "email role isActive createdAt"
     );
 
     if (!customer) {

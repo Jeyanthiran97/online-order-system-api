@@ -59,7 +59,7 @@ export const registerSeller = async (req, res, next) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       const existingSeller = await Seller.findOne({ userId: existingUser._id });
-      if (existingSeller && existingSeller.status === "pending") {
+      if (existingSeller && existingSeller.approvalStatus === "pending") {
         return res.status(400).json({
           success: false,
           error: "Seller registration already pending",
@@ -101,7 +101,7 @@ export const registerDeliverer = async (req, res, next) => {
       const existingDeliverer = await Deliverer.findOne({
         userId: existingUser._id,
       });
-      if (existingDeliverer && existingDeliverer.status === "pending") {
+      if (existingDeliverer && existingDeliverer.approvalStatus === "pending") {
         return res.status(400).json({
           success: false,
           error: "Deliverer registration already pending",
@@ -162,7 +162,7 @@ export const login = async (req, res, next) => {
       });
     }
 
-    if (user.status !== "active") {
+    if (!user.isActive) {
       return res.status(403).json({
         success: false,
         error: "Account is inactive",
@@ -171,7 +171,7 @@ export const login = async (req, res, next) => {
 
     if (user.role === "seller") {
       const seller = await Seller.findOne({ userId: user._id });
-      if (seller && seller.status !== "approved") {
+      if (seller && seller.approvalStatus !== "approved") {
         return res.status(403).json({
           success: false,
           error: "Seller account not approved",
@@ -181,7 +181,7 @@ export const login = async (req, res, next) => {
 
     if (user.role === "deliverer") {
       const deliverer = await Deliverer.findOne({ userId: user._id });
-      if (deliverer && deliverer.status !== "approved") {
+      if (deliverer && deliverer.approvalStatus !== "approved") {
         return res.status(403).json({
           success: false,
           error: "Deliverer account not approved",
@@ -227,7 +227,7 @@ export const getMe = async (req, res, next) => {
           id: user._id,
           email: user.email,
           role: user.role,
-          status: user.status,
+          isActive: user.isActive,
         },
         profile,
       },

@@ -5,14 +5,16 @@ import Deliverer from "../models/Deliverer.js";
 
 export const getAllUsers = async (req, res, next) => {
   try {
-    const { role, status, approvalStatus } = req.query;
+    const { role, isActive, approvalStatus } = req.query;
     const filter = {};
 
     // Filter by user role
     if (role) filter.role = role;
 
-    // Filter by user status (active/inactive)
-    if (status) filter.status = status;
+    // Filter by user active status
+    if (isActive !== undefined) {
+      filter.isActive = isActive === "true" || isActive === true;
+    }
 
     // Get all users matching the filter
     let users = await User.find(filter)
@@ -37,7 +39,7 @@ export const getAllUsers = async (req, res, next) => {
             id: user._id,
             email: user.email,
             role: user.role,
-            status: user.status,
+            isActive: user.isActive,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
           },
@@ -50,28 +52,19 @@ export const getAllUsers = async (req, res, next) => {
     let filteredUsers = usersWithProfiles;
     if (approvalStatus) {
       if (approvalStatus === "pending") {
-        // Filter for sellers/deliverers with pending status
+        // Filter for sellers/deliverers/customers with pending status
         filteredUsers = usersWithProfiles.filter((item) => {
-          if (item.user.role === "seller" || item.user.role === "deliverer") {
-            return item.profile && item.profile.status === "pending";
-          }
-          return false;
+          return item.profile && item.profile.approvalStatus === "pending";
         });
       } else if (approvalStatus === "approved") {
-        // Filter for sellers/deliverers with approved status
+        // Filter for sellers/deliverers/customers with approved status
         filteredUsers = usersWithProfiles.filter((item) => {
-          if (item.user.role === "seller" || item.user.role === "deliverer") {
-            return item.profile && item.profile.status === "approved";
-          }
-          return false;
+          return item.profile && item.profile.approvalStatus === "approved";
         });
       } else if (approvalStatus === "rejected") {
-        // Filter for sellers/deliverers with rejected status
+        // Filter for sellers/deliverers/customers with rejected status
         filteredUsers = usersWithProfiles.filter((item) => {
-          if (item.user.role === "seller" || item.user.role === "deliverer") {
-            return item.profile && item.profile.status === "rejected";
-          }
-          return false;
+          return item.profile && item.profile.approvalStatus === "rejected";
         });
       }
     }
@@ -114,7 +107,7 @@ export const getUserById = async (req, res, next) => {
           id: user._id,
           email: user.email,
           role: user.role,
-          status: user.status,
+          isActive: user.isActive,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         },

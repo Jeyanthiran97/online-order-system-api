@@ -22,10 +22,10 @@ const delivererSchema = new mongoose.Schema({
     required: [true, 'NIC is required'],
     trim: true
   },
-  status: {
+  approvalStatus: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending'
+    enum: ["pending", "approved", "rejected"],
+    default: "pending",
   },
   reason: {
     type: String,

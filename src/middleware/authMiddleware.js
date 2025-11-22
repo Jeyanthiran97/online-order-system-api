@@ -16,7 +16,7 @@ export const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(decoded.userId).select("-password");
 
-    if (!user || user.status !== "active") {
+    if (!user || !user.isActive) {
       return res.status(401).json({
         success: false,
         error: "User not found or inactive",
@@ -40,7 +40,7 @@ export const authOptional = async (req, res, next) => {
     if (token) {
       const decoded = jwt.verify(token, JWT_SECRET);
       const user = await User.findById(decoded.userId).select("-password");
-      if (user && user.status === "active") {
+      if (user && user.isActive) {
         req.user = user;
       }
     }

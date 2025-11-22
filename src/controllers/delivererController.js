@@ -3,11 +3,11 @@ import User from "../models/User.js";
 
 export const getAllDeliverers = async (req, res, next) => {
   try {
-    const { status } = req.query;
-    const filter = status ? { status } : {};
+    const { approvalStatus } = req.query;
+    const filter = approvalStatus ? { approvalStatus } : {};
 
     const deliverers = await Deliverer.find(filter)
-      .populate("userId", "email role status createdAt")
+      .populate("userId", "email role isActive createdAt")
       .sort({ createdAt: -1 });
 
     res.json({
@@ -24,7 +24,7 @@ export const getDelivererById = async (req, res, next) => {
   try {
     const deliverer = await Deliverer.findById(req.params.id).populate(
       "userId",
-      "email role status createdAt"
+      "email role isActive createdAt"
     );
 
     if (!deliverer) {
@@ -54,14 +54,14 @@ export const approveDeliverer = async (req, res, next) => {
       });
     }
 
-    deliverer.status = "approved";
+    deliverer.approvalStatus = "approved";
     deliverer.verifiedAt = new Date();
     deliverer.reason = undefined;
     await deliverer.save();
 
     const populatedDeliverer = await Deliverer.findById(deliverer._id).populate(
       "userId",
-      "email role status createdAt"
+      "email role isActive createdAt"
     );
 
     res.json({
@@ -85,13 +85,13 @@ export const rejectDeliverer = async (req, res, next) => {
       });
     }
 
-    deliverer.status = "rejected";
+    deliverer.approvalStatus = "rejected";
     deliverer.reason = reason || "Rejected by admin";
     await deliverer.save();
 
     const populatedDeliverer = await Deliverer.findById(deliverer._id).populate(
       "userId",
-      "email role status createdAt"
+      "email role isActive createdAt"
     );
 
     res.json({

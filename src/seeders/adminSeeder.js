@@ -20,7 +20,7 @@ const seedAdmin = async () => {
       email: adminEmail,
       password: "Admin@123",
       role: "admin",
-      status: "active",
+      isActive: true,
     });
 
     console.log("Admin user created successfully:", {

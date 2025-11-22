@@ -16,10 +16,10 @@ const sellerSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
-  status: {
+  approvalStatus: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending'
+    enum: ["pending", "approved", "rejected"],
+    default: "pending",
   },
   reason: {
     type: String,

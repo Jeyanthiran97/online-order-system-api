@@ -206,7 +206,7 @@ export const updateOrder = async (req, res, next) => {
           const Deliverer = (await import('../models/Deliverer.js')).default;
           const deliverer = await Deliverer.findById(assignedDelivererId);
           
-          if (!deliverer || deliverer.status !== 'approved') {
+          if (!deliverer || deliverer.approvalStatus !== 'approved') {
             return res.status(400).json({
               success: false,
               error: 'Invalid or unapproved deliverer'

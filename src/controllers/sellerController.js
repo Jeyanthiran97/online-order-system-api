@@ -3,11 +3,11 @@ import User from "../models/User.js";
 
 export const getAllSellers = async (req, res, next) => {
   try {
-    const { status } = req.query;
-    const filter = status ? { status } : {};
+    const { approvalStatus } = req.query;
+    const filter = approvalStatus ? { approvalStatus } : {};
 
     const sellers = await Seller.find(filter)
-      .populate("userId", "email role status createdAt")
+      .populate("userId", "email role isActive createdAt")
       .sort({ createdAt: -1 });
 
     res.json({
@@ -24,7 +24,7 @@ export const getSellerById = async (req, res, next) => {
   try {
     const seller = await Seller.findById(req.params.id).populate(
       "userId",
-      "email role status createdAt"
+      "email role isActive createdAt"
     );
 
     if (!seller) {
@@ -54,14 +54,14 @@ export const approveSeller = async (req, res, next) => {
       });
     }
 
-    seller.status = "approved";
+    seller.approvalStatus = "approved";
     seller.verifiedAt = new Date();
     seller.reason = undefined;
     await seller.save();
 
     const populatedSeller = await Seller.findById(seller._id).populate(
       "userId",
-      "email role status createdAt"
+      "email role isActive createdAt"
     );
 
     res.json({
@@ -85,13 +85,13 @@ export const rejectSeller = async (req, res, next) => {
       });
     }
 
-    seller.status = "rejected";
+    seller.approvalStatus = "rejected";
     seller.reason = reason || "Rejected by admin";
     await seller.save();
 
     const populatedSeller = await Seller.findById(seller._id).populate(
       "userId",
-      "email role status createdAt"
+      "email role isActive createdAt"
     );
 
     res.json({
@@ -102,4 +102,3 @@ export const rejectSeller = async (req, res, next) => {
     next(error);
   }
 };
-
