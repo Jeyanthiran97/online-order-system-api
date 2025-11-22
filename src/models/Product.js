@@ -25,6 +25,16 @@ const productSchema = new mongoose.Schema({
     required: [true, 'Stock is required'],
     min: [0, 'Stock must be positive'],
     default: 0
+  },
+  category: {
+    type: String,
+    trim: true
+  },
+  rating: {
+    type: Number,
+    min: [0, 'Rating must be between 0 and 5'],
+    max: [5, 'Rating must be between 0 and 5'],
+    default: 0
   }
 }, {
   timestamps: true

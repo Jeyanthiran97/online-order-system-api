@@ -1,39 +1,153 @@
-import Product from '../models/Product.js';
-import Seller from '../models/Seller.js';
+import Product from "../models/Product.js";
+import Seller from "../models/Seller.js";
 
 export const createProduct = async (req, res, next) => {
   try {
-    const { name, description, price, stock } = req.body;
+    const { name, description, price, stock, category, rating } = req.body;
 
     const product = await Product.create({
       sellerId: req.seller._id,
       name,
       description,
       price,
-      stock
+      stock,
+      category,
+      rating: rating || 0,
     });
 
     res.status(201).json({
       success: true,
-      data: product
+      data: product,
     });
   } catch (error) {
     next(error);
   }
 };
 
+const buildProductQuery = (req) => {
+  const {
+    category,
+    minPrice,
+    maxPrice,
+    minRating,
+    maxRating,
+    availability,
+    stockStatus,
+    search,
+    sellerId,
+  } = req.query;
+
+  const filter = {};
+
+  // Role-based filtering
+  if (req.user) {
+    if (req.user.role === "seller") {
+      // Sellers only see their own products
+      if (req.seller) {
+        filter.sellerId = req.seller._id;
+      }
+    }
+    // Admin and customer can see all products (no sellerId filter)
+  }
+
+  // Category filter
+  if (category) {
+    filter.category = category;
+  }
+
+  // Price range filter
+  if (minPrice || maxPrice) {
+    filter.price = {};
+    if (minPrice) filter.price.$gte = Number(minPrice);
+    if (maxPrice) filter.price.$lte = Number(maxPrice);
+  }
+
+  // Rating range filter
+  if (minRating || maxRating) {
+    filter.rating = {};
+    if (minRating) filter.rating.$gte = Number(minRating);
+    if (maxRating) filter.rating.$lte = Number(maxRating);
+  }
+
+  // Availability filter (for customers)
+  if (availability === "inStock") {
+    filter.stock = { $gt: 0 };
+  } else if (availability === "outOfStock") {
+    filter.stock = { $eq: 0 };
+  }
+
+  // Stock status filter (for sellers)
+  if (stockStatus === "low") {
+    filter.stock = { $lte: 10 };
+  } else if (stockStatus === "inStock") {
+    filter.stock = { $gt: 0 };
+  } else if (stockStatus === "outOfStock") {
+    filter.stock = { $eq: 0 };
+  }
+
+  // Search by name or description
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  // Seller ID filter (admin can filter by seller)
+  if (sellerId && (req.user?.role === "admin" || !req.user)) {
+    filter.sellerId = sellerId;
+  }
+
+  return filter;
+};
+
+const buildSortQuery = (sortParam) => {
+  if (!sortParam) return { createdAt: -1 };
+
+  const sortFields = {};
+  const fields = sortParam.split(",");
+
+  fields.forEach((field) => {
+    const trimmedField = field.trim();
+    if (trimmedField.startsWith("-")) {
+      sortFields[trimmedField.substring(1)] = -1;
+    } else {
+      sortFields[trimmedField] = 1;
+    }
+  });
+
+  return sortFields;
+};
+
 export const getProducts = async (req, res, next) => {
   try {
-    const { sellerId } = req.query;
-    const filter = sellerId ? { sellerId } : {};
+    const filter = buildProductQuery(req);
+    const sort = buildSortQuery(req.query.sort);
 
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    // Get total count
+    const total = await Product.countDocuments(filter);
+
+    // Get products with pagination
     const products = await Product.find(filter)
-      .populate('sellerId', 'shopName')
-      .sort({ createdAt: -1 });
+      .populate("sellerId", "shopName")
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
+
+    const totalPages = Math.ceil(total / limit);
 
     res.json({
       success: true,
-      data: products
+      count: products.length,
+      total,
+      totalPages,
+      currentPage: page,
+      data: products,
     });
   } catch (error) {
     next(error);
@@ -42,19 +156,21 @@ export const getProducts = async (req, res, next) => {
 
 export const getProductById = async (req, res, next) => {
   try {
-    const product = await Product.findById(req.params.id)
-      .populate('sellerId', 'shopName');
+    const product = await Product.findById(req.params.id).populate(
+      "sellerId",
+      "shopName"
+    );
 
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found'
+        error: "Product not found",
       });
     }
 
     res.json({
       success: true,
-      data: product
+      data: product,
     });
   } catch (error) {
     next(error);
@@ -68,14 +184,14 @@ export const updateProduct = async (req, res, next) => {
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found'
+        error: "Product not found",
       });
     }
 
     if (product.sellerId.toString() !== req.seller._id.toString()) {
       return res.status(403).json({
         success: false,
-        error: 'Not authorized to update this product'
+        error: "Not authorized to update this product",
       });
     }
 
@@ -87,7 +203,7 @@ export const updateProduct = async (req, res, next) => {
 
     res.json({
       success: true,
-      data: updatedProduct
+      data: updatedProduct,
     });
   } catch (error) {
     next(error);
@@ -101,14 +217,14 @@ export const deleteProduct = async (req, res, next) => {
     if (!product) {
       return res.status(404).json({
         success: false,
-        error: 'Product not found'
+        error: "Product not found",
       });
     }
 
     if (product.sellerId.toString() !== req.seller._id.toString()) {
       return res.status(403).json({
         success: false,
-        error: 'Not authorized to delete this product'
+        error: "Not authorized to delete this product",
       });
     }
 
@@ -116,10 +232,9 @@ export const deleteProduct = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Product deleted successfully'
+      message: "Product deleted successfully",
     });
   } catch (error) {
     next(error);
   }
 };
-

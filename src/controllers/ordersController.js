@@ -1,8 +1,10 @@
-import Order from '../models/Order.js';
-import Product from '../models/Product.js';
-import Customer from '../models/Customer.js';
-import Seller from '../models/Seller.js';
-import Delivery from '../models/Delivery.js';
+import mongoose from "mongoose";
+import Order from "../models/Order.js";
+import Product from "../models/Product.js";
+import Customer from "../models/Customer.js";
+import Seller from "../models/Seller.js";
+import Deliverer from "../models/Deliverer.js";
+import Delivery from "../models/Delivery.js";
 
 export const createOrder = async (req, res, next) => {
   try {
@@ -11,7 +13,7 @@ export const createOrder = async (req, res, next) => {
     if (!products || !Array.isArray(products) || products.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'Products array is required'
+        error: "Products array is required",
       });
     }
 
@@ -19,7 +21,7 @@ export const createOrder = async (req, res, next) => {
     if (!customer) {
       return res.status(404).json({
         success: false,
-        error: 'Customer profile not found'
+        error: "Customer profile not found",
       });
     }
 
@@ -31,14 +33,14 @@ export const createOrder = async (req, res, next) => {
       if (!product) {
         return res.status(404).json({
           success: false,
-          error: `Product ${item.productId} not found`
+          error: `Product ${item.productId} not found`,
         });
       }
 
       if (product.stock < item.quantity) {
         return res.status(400).json({
           success: false,
-          error: `Insufficient stock for product ${product.name}`
+          error: `Insufficient stock for product ${product.name}`,
         });
       }
 
@@ -48,7 +50,7 @@ export const createOrder = async (req, res, next) => {
       orderProducts.push({
         productId: product._id,
         quantity: item.quantity,
-        price: product.price
+        price: product.price,
       });
 
       product.stock -= item.quantity;
@@ -58,83 +60,221 @@ export const createOrder = async (req, res, next) => {
     const order = await Order.create({
       customerId: customer._id,
       products: orderProducts,
-      totalPrice
+      totalPrice,
     });
 
     const populatedOrder = await Order.findById(order._id)
-      .populate('products.productId', 'name description price')
-      .populate('customerId', 'fullName phone address');
+      .populate("products.productId", "name description price")
+      .populate("customerId", "fullName phone address");
 
     res.status(201).json({
       success: true,
-      data: populatedOrder
+      data: populatedOrder,
     });
   } catch (error) {
     next(error);
   }
 };
 
+const buildOrderQuery = async (req) => {
+  const {
+    status,
+    customerId,
+    sellerId,
+    minTotalPrice,
+    maxTotalPrice,
+    startDate,
+    endDate,
+    search,
+  } = req.query;
+
+  let filter = {};
+
+  // Role-based filtering
+  if (req.user) {
+    if (req.user.role === "customer") {
+      // Customers only see their own orders
+      const customer = await Customer.findOne({ userId: req.user._id });
+      if (customer) {
+        filter.customerId = customer._id;
+      } else {
+        // Return empty result if customer profile not found
+        filter.customerId = null;
+      }
+    } else if (req.user.role === "seller") {
+      // Sellers see orders containing their products
+      const seller = await Seller.findOne({ userId: req.user._id });
+      if (seller) {
+        const sellerProducts = await Product.find({ sellerId: seller._id }).select("_id");
+        const productIds = sellerProducts.map((p) => p._id);
+        filter["products.productId"] = { $in: productIds };
+      } else {
+        // Return empty result if seller profile not found
+        filter._id = null;
+      }
+    } else if (req.user.role === "deliverer") {
+      // Deliverers see only assigned orders
+      const deliverer = await Deliverer.findOne({ userId: req.user._id });
+      if (deliverer) {
+        const deliveries = await Delivery.find({ delivererId: deliverer._id }).select("orderId");
+        const orderIds = deliveries.map((d) => d.orderId);
+        filter._id = { $in: orderIds };
+      } else {
+        // Return empty result if deliverer profile not found
+        filter._id = null;
+      }
+    }
+    // Admin can see all orders (no role-based filter)
+  }
+
+  // Status filter
+  if (status) {
+    const statusArray = Array.isArray(status) ? status : status.split(",");
+    if (statusArray.length === 1) {
+      filter.status = statusArray[0];
+    } else {
+      filter.status = { $in: statusArray };
+    }
+  }
+
+  // Customer ID filter (admin only)
+  if (customerId && req.user?.role === "admin") {
+    filter.customerId = customerId;
+  }
+
+  // Seller ID filter (admin only - orders containing seller's products)
+  if (sellerId && req.user?.role === "admin") {
+    const sellerProducts = await Product.find({ sellerId }).select("_id");
+    const productIds = sellerProducts.map((p) => p._id);
+    if (productIds.length > 0) {
+      filter["products.productId"] = { $in: productIds };
+    } else {
+      filter._id = null; // No products = no orders
+    }
+  }
+
+  // Total price range filter
+  if (minTotalPrice || maxTotalPrice) {
+    filter.totalPrice = {};
+    if (minTotalPrice) filter.totalPrice.$gte = Number(minTotalPrice);
+    if (maxTotalPrice) filter.totalPrice.$lte = Number(maxTotalPrice);
+  }
+
+  // Date range filter
+  if (startDate || endDate) {
+    filter.createdAt = {};
+    if (startDate) {
+      filter.createdAt.$gte = new Date(startDate);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // Include entire end date
+      filter.createdAt.$lte = end;
+    }
+  }
+
+  // Search by customer name or order ID
+  if (search) {
+    if (req.user?.role === "admin") {
+      // Admin can search by customer name
+      const customers = await Customer.find({
+        $or: [
+          { fullName: { $regex: search, $options: "i" } },
+          { phone: { $regex: search, $options: "i" } },
+        ],
+      }).select("_id");
+      const customerIds = customers.map((c) => c._id);
+      if (customerIds.length > 0) {
+        filter.customerId = { $in: customerIds };
+      } else {
+        // Also try to search by order ID
+        if (mongoose.Types.ObjectId.isValid(search)) {
+          filter.$or = [{ _id: search }];
+        } else {
+          filter._id = null; // No matches
+        }
+      }
+    } else {
+      // For non-admin, try order ID search
+      if (mongoose.Types.ObjectId.isValid(search)) {
+        filter._id = search;
+      }
+    }
+  }
+
+  return filter;
+};
+
+const buildSortQuery = (sortParam) => {
+  if (!sortParam) return { createdAt: -1 };
+
+  const sortFields = {};
+  const fields = sortParam.split(",");
+
+  fields.forEach((field) => {
+    const trimmedField = field.trim();
+    if (trimmedField.startsWith("-")) {
+      sortFields[trimmedField.substring(1)] = -1;
+    } else {
+      sortFields[trimmedField] = 1;
+    }
+  });
+
+  return sortFields;
+};
+
 export const getOrders = async (req, res, next) => {
   try {
-    let orders;
+    const filter = await buildOrderQuery(req);
+    const sort = buildSortQuery(req.query.sort);
 
-    if (req.user.role === 'customer') {
-      const customer = await Customer.findOne({ userId: req.user._id });
-      if (!customer) {
-        return res.status(404).json({
-          success: false,
-          error: 'Customer profile not found'
-        });
-      }
-      orders = await Order.find({ customerId: customer._id })
-        .populate('products.productId', 'name description price')
-        .populate('assignedDelivererId', 'fullName')
-        .sort({ createdAt: -1 });
-    } else if (req.user.role === 'seller') {
-      const seller = await Seller.findOne({ userId: req.user._id });
-      if (!seller) {
-        return res.status(404).json({
-          success: false,
-          error: 'Seller profile not found'
-        });
-      }
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-      const sellerProducts = await Product.find({ sellerId: seller._id }).select('_id');
-      const productIds = sellerProducts.map(p => p._id);
+    // Get total count
+    const total = await Order.countDocuments(filter);
 
-      orders = await Order.find({
-        'products.productId': { $in: productIds }
-      })
-        .populate('products.productId', 'name description price')
-        .populate('customerId', 'fullName phone address')
-        .populate('assignedDelivererId', 'fullName')
-        .sort({ createdAt: -1 });
-    } else if (req.user.role === 'deliverer') {
-      const deliverer = await Deliverer.findOne({ userId: req.user._id });
-      if (!deliverer) {
-        return res.status(404).json({
-          success: false,
-          error: 'Deliverer profile not found'
-        });
-      }
+    // Determine populate fields based on role
+    let populateFields = [
+      { path: "products.productId", select: "name description price" },
+    ];
 
-      const deliveries = await Delivery.find({ delivererId: deliverer._id }).select('orderId');
-      const orderIds = deliveries.map(d => d.orderId);
-
-      orders = await Order.find({ _id: { $in: orderIds } })
-        .populate('products.productId', 'name description price')
-        .populate('customerId', 'fullName phone address')
-        .sort({ createdAt: -1 });
-    } else {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied'
-      });
+    if (req.user?.role === "customer") {
+      populateFields.push({ path: "assignedDelivererId", select: "fullName" });
+    } else if (req.user?.role === "seller") {
+      populateFields.push(
+        { path: "customerId", select: "fullName phone address" },
+        { path: "assignedDelivererId", select: "fullName" }
+      );
+    } else if (req.user?.role === "deliverer") {
+      populateFields.push({ path: "customerId", select: "fullName phone address" });
+    } else if (req.user?.role === "admin") {
+      populateFields.push(
+        { path: "customerId", select: "fullName phone address" },
+        { path: "assignedDelivererId", select: "fullName" }
+      );
     }
+
+    // Get orders with pagination
+    let query = Order.find(filter).sort(sort).skip(skip).limit(limit);
+
+    populateFields.forEach((populate) => {
+      query = query.populate(populate);
+    });
+
+    const orders = await query;
+
+    const totalPages = Math.ceil(total / limit);
 
     res.json({
       success: true,
-      data: orders
+      count: orders.length,
+      total,
+      totalPages,
+      currentPage: page,
+      data: orders,
     });
   } catch (error) {
     next(error);
@@ -149,17 +289,17 @@ export const updateOrder = async (req, res, next) => {
     if (!order) {
       return res.status(404).json({
         success: false,
-        error: 'Order not found'
+        error: "Order not found",
       });
     }
 
-    if (req.user.role === 'customer') {
-      if (order.status === 'pending' && status === 'cancelled') {
+    if (req.user.role === "customer") {
+      if (order.status === "pending" && status === "cancelled") {
         const customer = await Customer.findById(order.customerId);
         if (customer.userId.toString() !== req.user._id.toString()) {
           return res.status(403).json({
             success: false,
-            error: 'Not authorized to cancel this order'
+            error: "Not authorized to cancel this order",
           });
         }
 
@@ -171,80 +311,78 @@ export const updateOrder = async (req, res, next) => {
           }
         }
 
-        order.status = 'cancelled';
+        order.status = "cancelled";
         await order.save();
 
         return res.json({
           success: true,
-          data: order
+          data: order,
         });
       } else {
         return res.status(403).json({
           success: false,
-          error: 'Customers can only cancel pending orders'
+          error: "Customers can only cancel pending orders",
         });
       }
     }
 
-    if (req.user.role === 'seller' || req.user.role === 'admin') {
-      if (status === 'confirmed' && order.status === 'pending') {
-        order.status = 'confirmed';
+    if (req.user.role === "seller" || req.user.role === "admin") {
+      if (status === "confirmed" && order.status === "pending") {
+        order.status = "confirmed";
         await order.save();
 
         return res.json({
           success: true,
-          data: order
+          data: order,
         });
       }
     }
 
-    if (req.user.role === 'admin') {
-      if (status && ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+    if (req.user.role === "admin") {
+      if (status && ["pending", "confirmed", "shipped", "delivered", "cancelled"].includes(status)) {
         order.status = status;
-        
+
         if (assignedDelivererId && !order.assignedDelivererId) {
-          const Deliverer = (await import('../models/Deliverer.js')).default;
           const deliverer = await Deliverer.findById(assignedDelivererId);
-          
-          if (!deliverer || deliverer.approvalStatus !== 'approved') {
+
+          if (!deliverer || deliverer.approvalStatus !== "approved") {
             return res.status(400).json({
               success: false,
-              error: 'Invalid or unapproved deliverer'
+              error: "Invalid or unapproved deliverer",
             });
           }
-          
+
           order.assignedDelivererId = assignedDelivererId;
-          
+
           const existingDelivery = await Delivery.findOne({ orderId: order._id });
           if (!existingDelivery) {
             await Delivery.create({
               orderId: order._id,
               delivererId: assignedDelivererId,
-              status: 'pending'
+              status: "pending",
             });
           }
         }
-        
+
         await order.save();
 
         const populatedOrder = await Order.findById(order._id)
-          .populate('products.productId', 'name description price')
-          .populate('customerId', 'fullName phone address')
-          .populate('assignedDelivererId', 'fullName');
+          .populate("products.productId", "name description price")
+          .populate("customerId", "fullName phone address")
+          .populate("assignedDelivererId", "fullName");
 
         return res.json({
           success: true,
-          data: populatedOrder
+          data: populatedOrder,
         });
       }
     }
 
     return res.status(403).json({
       success: false,
-      error: 'Not authorized to update this order'
+      error: "Not authorized to update this order",
     });
   } catch (error) {
     next(error);
   }
 };
-

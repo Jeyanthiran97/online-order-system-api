@@ -49,4 +49,3 @@ export const authOptional = async (req, res, next) => {
     next();
   }
 };
-

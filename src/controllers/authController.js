@@ -269,7 +269,8 @@ export const updateMe = async (req, res, next) => {
       const deliverer = await Deliverer.findOne({ userId: user._id });
       if (deliverer) {
         if (updateData.fullName) deliverer.fullName = updateData.fullName;
-        if (updateData.licenseNumber) deliverer.licenseNumber = updateData.licenseNumber;
+        if (updateData.licenseNumber)
+          deliverer.licenseNumber = updateData.licenseNumber;
         if (updateData.NIC) deliverer.NIC = updateData.NIC;
         await deliverer.save();
       } else {
