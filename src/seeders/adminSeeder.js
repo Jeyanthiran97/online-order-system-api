@@ -19,14 +19,14 @@ const seedAdmin = async () => {
     const admin = await User.create({
       email: adminEmail,
       password: 'Admin@123',
-      roles: ['admin'],
+      role: 'admin',
       status: 'active'
     });
 
     console.log('Admin user created successfully:', {
       id: admin._id,
       email: admin.email,
-      roles: admin.roles
+      role: admin.role
     });
 
     process.exit(0);

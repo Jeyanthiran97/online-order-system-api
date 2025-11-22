@@ -78,7 +78,7 @@ export const getOrders = async (req, res, next) => {
   try {
     let orders;
 
-    if (req.user.roles.includes('customer')) {
+    if (req.user.role === 'customer') {
       const customer = await Customer.findOne({ userId: req.user._id });
       if (!customer) {
         return res.status(404).json({
@@ -90,7 +90,7 @@ export const getOrders = async (req, res, next) => {
         .populate('products.productId', 'name description price')
         .populate('assignedDelivererId', 'fullName')
         .sort({ createdAt: -1 });
-    } else if (req.user.roles.includes('seller')) {
+    } else if (req.user.role === 'seller') {
       const seller = await Seller.findOne({ userId: req.user._id });
       if (!seller) {
         return res.status(404).json({
@@ -109,7 +109,7 @@ export const getOrders = async (req, res, next) => {
         .populate('customerId', 'fullName phone address')
         .populate('assignedDelivererId', 'fullName')
         .sort({ createdAt: -1 });
-    } else if (req.user.roles.includes('deliverer')) {
+    } else if (req.user.role === 'deliverer') {
       const deliverer = await Deliverer.findOne({ userId: req.user._id });
       if (!deliverer) {
         return res.status(404).json({
@@ -153,7 +153,7 @@ export const updateOrder = async (req, res, next) => {
       });
     }
 
-    if (req.user.roles.includes('customer')) {
+    if (req.user.role === 'customer') {
       if (order.status === 'pending' && status === 'cancelled') {
         const customer = await Customer.findById(order.customerId);
         if (customer.userId.toString() !== req.user._id.toString()) {
@@ -186,7 +186,7 @@ export const updateOrder = async (req, res, next) => {
       }
     }
 
-    if (req.user.roles.includes('seller') || req.user.roles.includes('admin')) {
+    if (req.user.role === 'seller' || req.user.role === 'admin') {
       if (status === 'confirmed' && order.status === 'pending') {
         order.status = 'confirmed';
         await order.save();
@@ -198,7 +198,7 @@ export const updateOrder = async (req, res, next) => {
       }
     }
 
-    if (req.user.roles.includes('admin')) {
+    if (req.user.role === 'admin') {
       if (status && ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].includes(status)) {
         order.status = status;
         

@@ -24,7 +24,7 @@ export const registerCustomer = async (req, res, next) => {
     const user = await User.create({
       email,
       password,
-      roles: ['customer']
+      role: 'customer'
     });
 
     await Customer.create({
@@ -43,7 +43,7 @@ export const registerCustomer = async (req, res, next) => {
         user: {
           id: user._id,
           email: user.email,
-          roles: user.roles
+          role: user.role
         }
       }
     });
@@ -74,7 +74,7 @@ export const registerSeller = async (req, res, next) => {
     const user = await User.create({
       email,
       password,
-      roles: ['seller']
+      role: 'seller'
     });
 
     await Seller.create({
@@ -114,7 +114,7 @@ export const registerDeliverer = async (req, res, next) => {
     const user = await User.create({
       email,
       password,
-      roles: ['deliverer']
+      role: 'deliverer'
     });
 
     await Deliverer.create({
@@ -167,7 +167,7 @@ export const login = async (req, res, next) => {
       });
     }
 
-    if (user.roles.includes('seller')) {
+    if (user.role === 'seller') {
       const seller = await Seller.findOne({ userId: user._id });
       if (seller && seller.status !== 'approved') {
         return res.status(403).json({
@@ -177,7 +177,7 @@ export const login = async (req, res, next) => {
       }
     }
 
-    if (user.roles.includes('deliverer')) {
+    if (user.role === 'deliverer') {
       const deliverer = await Deliverer.findOne({ userId: user._id });
       if (deliverer && deliverer.status !== 'approved') {
         return res.status(403).json({
@@ -196,7 +196,7 @@ export const login = async (req, res, next) => {
         user: {
           id: user._id,
           email: user.email,
-          roles: user.roles
+          role: user.role
         }
       }
     });

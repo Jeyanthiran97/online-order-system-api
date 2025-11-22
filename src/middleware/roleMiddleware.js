@@ -7,8 +7,8 @@ export const requireRole = (...roles) => {
       });
     }
 
-    const userRoles = req.user.roles || [];
-    const hasRole = roles.some(role => userRoles.includes(role));
+    const userRole = req.user.role;
+    const hasRole = roles.includes(userRole);
 
     if (!hasRole) {
       return res.status(403).json({
@@ -23,7 +23,7 @@ export const requireRole = (...roles) => {
 
 export const requireApprovedSeller = async (req, res, next) => {
   try {
-    if (!req.user.roles.includes('seller')) {
+    if (req.user.role !== 'seller') {
       return res.status(403).json({
         success: false,
         error: 'Access denied. Seller role required'
@@ -52,7 +52,7 @@ export const requireApprovedSeller = async (req, res, next) => {
 
 export const requireApprovedDeliverer = async (req, res, next) => {
   try {
-    if (!req.user.roles.includes('deliverer')) {
+    if (req.user.role !== 'deliverer') {
       return res.status(403).json({
         success: false,
         error: 'Access denied. Deliverer role required'

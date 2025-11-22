@@ -8,11 +8,11 @@ export const getMe = async (req, res, next) => {
     const user = req.user;
     let profile = null;
 
-    if (user.roles.includes('customer')) {
+    if (user.role === 'customer') {
       profile = await Customer.findOne({ userId: user._id });
-    } else if (user.roles.includes('seller')) {
+    } else if (user.role === 'seller') {
       profile = await Seller.findOne({ userId: user._id });
-    } else if (user.roles.includes('deliverer')) {
+    } else if (user.role === 'deliverer') {
       profile = await Deliverer.findOne({ userId: user._id });
     }
 
@@ -22,7 +22,7 @@ export const getMe = async (req, res, next) => {
         user: {
           id: user._id,
           email: user.email,
-          roles: user.roles,
+          role: user.role,
           status: user.status
         },
         profile
@@ -38,7 +38,7 @@ export const updateMe = async (req, res, next) => {
     const user = req.user;
     const updateData = req.body;
 
-    if (user.roles.includes('customer')) {
+    if (user.role === 'customer') {
       const customer = await Customer.findOne({ userId: user._id });
       if (customer) {
         Object.assign(customer, updateData);
@@ -49,7 +49,7 @@ export const updateMe = async (req, res, next) => {
           error: 'Customer profile not found'
         });
       }
-    } else if (user.roles.includes('seller')) {
+    } else if (user.role === 'seller') {
       const seller = await Seller.findOne({ userId: user._id });
       if (seller) {
         if (updateData.shopName) seller.shopName = updateData.shopName;
@@ -61,7 +61,7 @@ export const updateMe = async (req, res, next) => {
           error: 'Seller profile not found'
         });
       }
-    } else if (user.roles.includes('deliverer')) {
+    } else if (user.role === 'deliverer') {
       const deliverer = await Deliverer.findOne({ userId: user._id });
       if (deliverer) {
         if (updateData.fullName) deliverer.fullName = updateData.fullName;
@@ -76,9 +76,9 @@ export const updateMe = async (req, res, next) => {
       }
     }
 
-    const updatedProfile = user.roles.includes('customer')
+    const updatedProfile = user.role === 'customer'
       ? await Customer.findOne({ userId: user._id })
-      : user.roles.includes('seller')
+      : user.role === 'seller'
       ? await Seller.findOne({ userId: user._id })
       : await Deliverer.findOne({ userId: user._id });
 

@@ -20,14 +20,14 @@ const seedSampleData = async () => {
     const customer1 = await User.create({
       email: 'customer1@example.com',
       password: 'Customer@123',
-      roles: ['customer'],
+      role: 'customer',
       status: 'active'
     });
 
     const customer2 = await User.create({
       email: 'customer2@example.com',
       password: 'Customer@123',
-      roles: ['customer'],
+      role: 'customer',
       status: 'active'
     });
 
@@ -51,14 +51,14 @@ const seedSampleData = async () => {
     const seller1 = await User.create({
       email: 'seller1@example.com',
       password: 'Seller@123',
-      roles: ['seller'],
+      role: 'seller',
       status: 'active'
     });
 
     const seller2 = await User.create({
       email: 'seller2@example.com',
       password: 'Seller@123',
-      roles: ['seller'],
+      role: 'seller',
       status: 'active'
     });
 
@@ -84,14 +84,14 @@ const seedSampleData = async () => {
     const deliverer1 = await User.create({
       email: 'deliverer1@example.com',
       password: 'Deliverer@123',
-      roles: ['deliverer'],
+      role: 'deliverer',
       status: 'active'
     });
 
     const deliverer2 = await User.create({
       email: 'deliverer2@example.com',
       password: 'Deliverer@123',
-      roles: ['deliverer'],
+      role: 'deliverer',
       status: 'active'
     });
 
