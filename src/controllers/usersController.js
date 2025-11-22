@@ -1,18 +1,109 @@
-import User from '../models/User.js';
-import Customer from '../models/Customer.js';
-import Seller from '../models/Seller.js';
-import Deliverer from '../models/Deliverer.js';
+import User from "../models/User.js";
+import Customer from "../models/Customer.js";
+import Seller from "../models/Seller.js";
+import Deliverer from "../models/Deliverer.js";
 
-export const getMe = async (req, res, next) => {
+export const getAllUsers = async (req, res, next) => {
   try {
-    const user = req.user;
+    const { role, status, approvalStatus } = req.query;
+    const filter = {};
+
+    // Filter by user role
+    if (role) filter.role = role;
+
+    // Filter by user status (active/inactive)
+    if (status) filter.status = status;
+
+    // Get all users matching the filter
+    let users = await User.find(filter)
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    // Get profiles for all users
+    const usersWithProfiles = await Promise.all(
+      users.map(async (user) => {
+        let profile = null;
+
+        if (user.role === "customer") {
+          profile = await Customer.findOne({ userId: user._id });
+        } else if (user.role === "seller") {
+          profile = await Seller.findOne({ userId: user._id });
+        } else if (user.role === "deliverer") {
+          profile = await Deliverer.findOne({ userId: user._id });
+        }
+
+        return {
+          user: {
+            id: user._id,
+            email: user.email,
+            role: user.role,
+            status: user.status,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          },
+          profile,
+        };
+      })
+    );
+
+    // Apply approval status filter if provided
+    let filteredUsers = usersWithProfiles;
+    if (approvalStatus) {
+      if (approvalStatus === "pending") {
+        // Filter for sellers/deliverers with pending status
+        filteredUsers = usersWithProfiles.filter((item) => {
+          if (item.user.role === "seller" || item.user.role === "deliverer") {
+            return item.profile && item.profile.status === "pending";
+          }
+          return false;
+        });
+      } else if (approvalStatus === "approved") {
+        // Filter for sellers/deliverers with approved status
+        filteredUsers = usersWithProfiles.filter((item) => {
+          if (item.user.role === "seller" || item.user.role === "deliverer") {
+            return item.profile && item.profile.status === "approved";
+          }
+          return false;
+        });
+      } else if (approvalStatus === "rejected") {
+        // Filter for sellers/deliverers with rejected status
+        filteredUsers = usersWithProfiles.filter((item) => {
+          if (item.user.role === "seller" || item.user.role === "deliverer") {
+            return item.profile && item.profile.status === "rejected";
+          }
+          return false;
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      count: filteredUsers.length,
+      data: filteredUsers,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserById = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
     let profile = null;
 
-    if (user.role === 'customer') {
+    if (user.role === "customer") {
       profile = await Customer.findOne({ userId: user._id });
-    } else if (user.role === 'seller') {
+    } else if (user.role === "seller") {
       profile = await Seller.findOne({ userId: user._id });
-    } else if (user.role === 'deliverer') {
+    } else if (user.role === "deliverer") {
       profile = await Deliverer.findOne({ userId: user._id });
     }
 
@@ -23,71 +114,14 @@ export const getMe = async (req, res, next) => {
           id: user._id,
           email: user.email,
           role: user.role,
-          status: user.status
+          status: user.status,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
         },
-        profile
-      }
+        profile,
+      },
     });
   } catch (error) {
     next(error);
   }
 };
-
-export const updateMe = async (req, res, next) => {
-  try {
-    const user = req.user;
-    const updateData = req.body;
-
-    if (user.role === 'customer') {
-      const customer = await Customer.findOne({ userId: user._id });
-      if (customer) {
-        Object.assign(customer, updateData);
-        await customer.save();
-      } else {
-        return res.status(404).json({
-          success: false,
-          error: 'Customer profile not found'
-        });
-      }
-    } else if (user.role === 'seller') {
-      const seller = await Seller.findOne({ userId: user._id });
-      if (seller) {
-        if (updateData.shopName) seller.shopName = updateData.shopName;
-        if (updateData.documents) seller.documents = updateData.documents;
-        await seller.save();
-      } else {
-        return res.status(404).json({
-          success: false,
-          error: 'Seller profile not found'
-        });
-      }
-    } else if (user.role === 'deliverer') {
-      const deliverer = await Deliverer.findOne({ userId: user._id });
-      if (deliverer) {
-        if (updateData.fullName) deliverer.fullName = updateData.fullName;
-        if (updateData.licenseNumber) deliverer.licenseNumber = updateData.licenseNumber;
-        if (updateData.NIC) deliverer.NIC = updateData.NIC;
-        await deliverer.save();
-      } else {
-        return res.status(404).json({
-          success: false,
-          error: 'Deliverer profile not found'
-        });
-      }
-    }
-
-    const updatedProfile = user.role === 'customer'
-      ? await Customer.findOne({ userId: user._id })
-      : user.role === 'seller'
-      ? await Seller.findOne({ userId: user._id })
-      : await Deliverer.findOne({ userId: user._id });
-
-    res.json({
-      success: true,
-      data: updatedProfile
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-

@@ -3,7 +3,7 @@ export const requireRole = (...roles) => {
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        error: 'Authentication required'
+        error: "Authentication required",
       });
     }
 
@@ -13,7 +13,7 @@ export const requireRole = (...roles) => {
     if (!hasRole) {
       return res.status(403).json({
         success: false,
-        error: 'Access denied. Insufficient permissions'
+        error: "Access denied. Insufficient permissions",
       });
     }
 
@@ -23,20 +23,20 @@ export const requireRole = (...roles) => {
 
 export const requireApprovedSeller = async (req, res, next) => {
   try {
-    if (req.user.role !== 'seller') {
+    if (req.user.role !== "seller") {
       return res.status(403).json({
         success: false,
-        error: 'Access denied. Seller role required'
+        error: "Access denied. Seller role required",
       });
     }
 
-    const Seller = (await import('../models/Seller.js')).default;
+    const Seller = (await import("../models/Seller.js")).default;
     const seller = await Seller.findOne({ userId: req.user._id });
 
-    if (!seller || seller.status !== 'approved') {
+    if (!seller || seller.status !== "approved") {
       return res.status(403).json({
         success: false,
-        error: 'Seller account not approved'
+        error: "Seller account not approved",
       });
     }
 
@@ -45,27 +45,27 @@ export const requireApprovedSeller = async (req, res, next) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      error: 'Error checking seller status'
+      error: "Error checking seller status",
     });
   }
 };
 
 export const requireApprovedDeliverer = async (req, res, next) => {
   try {
-    if (req.user.role !== 'deliverer') {
+    if (req.user.role !== "deliverer") {
       return res.status(403).json({
         success: false,
-        error: 'Access denied. Deliverer role required'
+        error: "Access denied. Deliverer role required",
       });
     }
 
-    const Deliverer = (await import('../models/Deliverer.js')).default;
+    const Deliverer = (await import("../models/Deliverer.js")).default;
     const deliverer = await Deliverer.findOne({ userId: req.user._id });
 
-    if (!deliverer || deliverer.status !== 'approved') {
+    if (!deliverer || deliverer.status !== "approved") {
       return res.status(403).json({
         success: false,
-        error: 'Deliverer account not approved'
+        error: "Deliverer account not approved",
       });
     }
 
@@ -74,7 +74,7 @@ export const requireApprovedDeliverer = async (req, res, next) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      error: 'Error checking deliverer status'
+      error: "Error checking deliverer status",
     });
   }
 };

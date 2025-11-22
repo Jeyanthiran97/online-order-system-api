@@ -43,3 +43,63 @@ export const getSellerById = async (req, res, next) => {
   }
 };
 
+export const approveSeller = async (req, res, next) => {
+  try {
+    const seller = await Seller.findById(req.params.id);
+
+    if (!seller) {
+      return res.status(404).json({
+        success: false,
+        error: "Seller not found",
+      });
+    }
+
+    seller.status = "approved";
+    seller.verifiedAt = new Date();
+    seller.reason = undefined;
+    await seller.save();
+
+    const populatedSeller = await Seller.findById(seller._id).populate(
+      "userId",
+      "email role status createdAt"
+    );
+
+    res.json({
+      success: true,
+      data: populatedSeller,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rejectSeller = async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+    const seller = await Seller.findById(req.params.id);
+
+    if (!seller) {
+      return res.status(404).json({
+        success: false,
+        error: "Seller not found",
+      });
+    }
+
+    seller.status = "rejected";
+    seller.reason = reason || "Rejected by admin";
+    await seller.save();
+
+    const populatedSeller = await Seller.findById(seller._id).populate(
+      "userId",
+      "email role status createdAt"
+    );
+
+    res.json({
+      success: true,
+      data: populatedSeller,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

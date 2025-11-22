@@ -43,3 +43,63 @@ export const getDelivererById = async (req, res, next) => {
   }
 };
 
+export const approveDeliverer = async (req, res, next) => {
+  try {
+    const deliverer = await Deliverer.findById(req.params.id);
+
+    if (!deliverer) {
+      return res.status(404).json({
+        success: false,
+        error: "Deliverer not found",
+      });
+    }
+
+    deliverer.status = "approved";
+    deliverer.verifiedAt = new Date();
+    deliverer.reason = undefined;
+    await deliverer.save();
+
+    const populatedDeliverer = await Deliverer.findById(deliverer._id).populate(
+      "userId",
+      "email role status createdAt"
+    );
+
+    res.json({
+      success: true,
+      data: populatedDeliverer,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rejectDeliverer = async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+    const deliverer = await Deliverer.findById(req.params.id);
+
+    if (!deliverer) {
+      return res.status(404).json({
+        success: false,
+        error: "Deliverer not found",
+      });
+    }
+
+    deliverer.status = "rejected";
+    deliverer.reason = reason || "Rejected by admin";
+    await deliverer.save();
+
+    const populatedDeliverer = await Deliverer.findById(deliverer._id).populate(
+      "userId",
+      "email role status createdAt"
+    );
+
+    res.json({
+      success: true,
+      data: populatedDeliverer,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
