@@ -6,7 +6,11 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "seed:admin": "node src/seeders/adminSeeder.js",
+    "seed:sample": "node src/seeders/sampleDataSeeder.js",
+    "seed:all": "node src/seeders/adminSeeder.js && node src/seeders/sampleDataSeeder.js",
+    "clear:data": "node src/seeders/clearData.js"
   },
   "keywords": [],
   "author": "",
