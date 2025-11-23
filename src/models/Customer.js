@@ -23,7 +23,7 @@ const customerSchema = new mongoose.Schema(
       required: [true, "Address is required"],
       trim: true,
     },
-    approvalStatus: {
+    status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "approved",
@@ -44,4 +44,3 @@ const customerSchema = new mongoose.Schema(
 const Customer = mongoose.model("Customer", customerSchema);
 
 export default Customer;
-

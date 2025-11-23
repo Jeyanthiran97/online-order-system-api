@@ -33,12 +33,12 @@ This PRD defines the requirements for an **Online Order System** following indus
 
 ## 3. Roles & Permissions
 
-| Role      | Description             | Permissions                                                                                  |
-| --------- | ----------------------- | -------------------------------------------------------------------------------------------- |
-| Customer  | End-user placing orders | View products (with filtering), Place orders, View own orders (with filtering), Cancel pending orders, Profile management |
+| Role      | Description             | Permissions                                                                                                                                              |
+| --------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Customer  | End-user placing orders | View products (with filtering), Place orders, View own orders (with filtering), Cancel pending orders, Profile management                                |
 | Seller    | Product owner           | Add/Edit/Delete products, View/manage own products (with filtering), View/manage related orders (with filtering), Profile management (requires approval) |
-| Deliverer | Delivery agent          | View assigned deliveries, Update delivery status, Profile management (requires approval) |
-| Admin     | System administrator    | Approve/reject sellers & deliverers, Manage all users/customers/sellers/deliverers (with filtering), View analytics, Assign deliverers to orders |
+| Deliverer | Delivery agent          | View assigned deliveries, Update delivery status, Profile management (requires approval)                                                                 |
+| Admin     | System administrator    | Approve/reject sellers & deliverers, Manage all users/customers/sellers/deliverers (with filtering), View analytics, Assign deliverers to orders         |
 
 ---
 
@@ -59,6 +59,7 @@ users {
 ```
 
 **Key Points:**
+
 - Single `role` field (not array) - one user can have only one role
 - `isActive` boolean instead of status string
 - Email must be unique across all users
@@ -73,7 +74,7 @@ customers {
   fullName (required)
   phone (required)
   address (required)
-  approvalStatus: 'pending' | 'approved' | 'rejected' (default: 'approved')
+  status: 'pending' | 'approved' | 'rejected' (default: 'approved')
   reason (optional, for rejection)
   verifiedAt (optional, timestamp when approved)
   createdAt
@@ -82,6 +83,7 @@ customers {
 ```
 
 **Key Points:**
+
 - Customers are approved by default
 - Approval status stored in profile, not in User model
 
@@ -93,7 +95,7 @@ sellers {
   userId (FK → users, unique, required)
   shopName (required)
   documents (array of strings, default: [])
-  approvalStatus: 'pending' | 'approved' | 'rejected' (default: 'pending')
+  status: 'pending' | 'approved' | 'rejected' (default: 'pending')
   reason (optional, for rejection)
   verifiedAt (optional, timestamp when approved)
   createdAt
@@ -102,6 +104,7 @@ sellers {
 ```
 
 **Key Points:**
+
 - Sellers require admin approval before they can login
 - Approval status stored in profile model
 
@@ -114,7 +117,7 @@ deliverers {
   fullName (required)
   licenseNumber (required)
   NIC (required)
-  approvalStatus: 'pending' | 'approved' | 'rejected' (default: 'pending')
+  status: 'pending' | 'approved' | 'rejected' (default: 'pending')
   reason (optional, for rejection)
   verifiedAt (optional, timestamp when approved)
   createdAt
@@ -123,6 +126,7 @@ deliverers {
 ```
 
 **Key Points:**
+
 - Deliverers require admin approval before they can login
 - Approval status stored in profile model
 
@@ -144,6 +148,7 @@ products {
 ```
 
 **Key Points:**
+
 - Added `category` and `rating` fields for better filtering
 - Stock is automatically decremented when order is placed
 
@@ -167,6 +172,7 @@ orders {
 ```
 
 **Key Points:**
+
 - Products array stores snapshot of product details at time of order
 - Stock is decremented when order is created
 - Stock is restored when order is cancelled
@@ -228,6 +234,7 @@ DELETE /api/products/:id       (seller only, own products)
 ```
 
 **Query Parameters for GET /api/products:**
+
 - `category` - Filter by category
 - `minPrice`, `maxPrice` - Price range filter
 - `minRating`, `maxRating` - Rating range filter
@@ -248,6 +255,7 @@ PATCH  /api/orders/:id        (customer: cancel, seller/admin: confirm, admin: a
 ```
 
 **Query Parameters for GET /api/orders:**
+
 - `status` - Filter by status (single or comma-separated: pending,confirmed,shipped,delivered,cancelled)
 - `customerId` - Filter by customer ID (admin only)
 - `sellerId` - Filter by seller ID (admin only)
@@ -259,6 +267,7 @@ PATCH  /api/orders/:id        (customer: cancel, seller/admin: confirm, admin: a
 - `limit` - Items per page (default: 10)
 
 **Role-based Access:**
+
 - **Customer**: Only sees their own orders
 - **Seller**: Only sees orders containing their products
 - **Deliverer**: Only sees assigned orders
@@ -272,9 +281,10 @@ GET    /api/users/:id          (get user with profile)
 ```
 
 **Query Parameters for GET /api/users:**
+
 - `role` - Filter by role (customer, seller, deliverer, admin)
 - `isActive` - Filter by active status (true/false)
-- `approvalStatus` - Filter by profile approval status (pending, approved, rejected)
+- `status` - Filter by profile approval status (pending, approved, rejected)
 - `search` - Search by email
 - `sort` - Sort fields (default: updatedAt descending)
 - `page` - Page number (default: 1)
@@ -288,7 +298,8 @@ GET    /api/customers/:id      (get customer by ID)
 ```
 
 **Query Parameters for GET /api/customers:**
-- `approvalStatus` - Filter by approval status (pending, approved, rejected)
+
+- `status` - Filter by approval status (pending, approved, rejected)
 - `isActive` - Filter by user active status (true/false)
 - `search` - Search by fullName, phone, or address
 - `sort` - Sort fields (default: updatedAt descending)
@@ -305,7 +316,8 @@ PATCH  /api/sellers/:id/reject  (reject seller)
 ```
 
 **Query Parameters for GET /api/sellers:**
-- `approvalStatus` - Filter by approval status (pending, approved, rejected)
+
+- `status` - Filter by approval status (pending, approved, rejected)
 - `isActive` - Filter by user active status (true/false)
 - `search` - Search by shopName
 - `sort` - Sort fields (default: updatedAt descending)
@@ -322,7 +334,8 @@ PATCH  /api/deliverers/:id/reject  (reject deliverer)
 ```
 
 **Query Parameters for GET /api/deliverers:**
-- `approvalStatus` - Filter by approval status (pending, approved, rejected)
+
+- `status` - Filter by approval status (pending, approved, rejected)
 - `isActive` - Filter by user active status (true/false)
 - `search` - Search by fullName, licenseNumber, or NIC
 - `sort` - Sort fields (default: updatedAt descending)
@@ -376,23 +389,23 @@ GET    /api/analytics          (get system analytics)
 
 ### Seller Approval
 
-1. Seller registers → `approvalStatus = 'pending'` in Seller profile
+1. Seller registers → `status = 'pending'` in Seller profile
 2. Admin reviews seller profile
-3. Admin approves → `approvalStatus = 'approved'`, `verifiedAt` set, `reason` cleared
-4. Admin rejects → `approvalStatus = 'rejected'`, `reason` set
-5. Seller can login only if `approvalStatus = 'approved'` and `isActive = true`
+3. Admin approves → `status = 'approved'`, `verifiedAt` set, `reason` cleared
+4. Admin rejects → `status = 'rejected'`, `reason` set
+5. Seller can login only if `status = 'approved'` and `isActive = true`
 
 ### Deliverer Approval
 
-1. Deliverer registers → `approvalStatus = 'pending'` in Deliverer profile
+1. Deliverer registers → `status = 'pending'` in Deliverer profile
 2. Admin reviews deliverer profile
-3. Admin approves → `approvalStatus = 'approved'`, `verifiedAt` set, `reason` cleared
-4. Admin rejects → `approvalStatus = 'rejected'`, `reason` set
-5. Deliverer can login only if `approvalStatus = 'approved'` and `isActive = true`
+3. Admin approves → `status = 'approved'`, `verifiedAt` set, `reason` cleared
+4. Admin rejects → `status = 'rejected'`, `reason` set
+5. Deliverer can login only if `status = 'approved'` and `isActive = true`
 
 ### Customer Approval
 
-- Customers are **approved by default** (`approvalStatus = 'approved'`)
+- Customers are **approved by default** (`status = 'approved'`)
 - Admin can still reject customers if needed
 
 ### Approval Endpoints
@@ -409,9 +422,10 @@ GET    /api/analytics          (get system analytics)
 ### Filtering
 
 All list endpoints support dynamic filtering based on query parameters:
+
 - **Products**: category, price range, rating range, availability, stock status, search
 - **Orders**: status, customer ID, seller ID, price range, date range, search
-- **Users/Customers/Sellers/Deliverers**: role, isActive, approvalStatus, search
+- **Users/Customers/Sellers/Deliverers**: role, isActive, status, search
 
 ### Sorting
 
@@ -619,7 +633,7 @@ All list endpoints support dynamic filtering based on query parameters:
 ### Profile Models
 
 - **Approval status**: Stored in profile models (Customer, Seller, Deliverer)
-- **Fields**: `approvalStatus`, `reason`, `verifiedAt`
+- **Fields**: `status`, `reason`, `verifiedAt`
 - **Default values**: Customers approved by default, Sellers/Deliverers pending by default
 
 ### Filtering & Sorting

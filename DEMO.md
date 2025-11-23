@@ -14,7 +14,7 @@
 
 **Request Body:**
 
-```json
+`json
 {
   "email": "customer@example.com",
   "password": "Customer@123",
@@ -22,11 +22,11 @@
   "phone": "+1234567890",
   "address": "123 Main St, City, Country"
 }
-```
+`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "data": {
@@ -38,7 +38,7 @@
     }
   }
 }
-```
+`
 
 ---
 
@@ -48,23 +48,23 @@
 
 **Request Body:**
 
-```json
+`json
 {
   "email": "seller@example.com",
   "password": "Seller@123",
   "shopName": "Tech Store",
   "documents": ["license.pdf", "certificate.pdf"]
 }
-```
+`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "message": "Seller registration submitted. Waiting for admin approval."
 }
-```
+`
 
 ---
 
@@ -74,7 +74,7 @@
 
 **Request Body:**
 
-```json
+`json
 {
   "email": "deliverer@example.com",
   "password": "Deliverer@123",
@@ -82,16 +82,16 @@
   "licenseNumber": "DL123456",
   "NIC": "NIC123456789"
 }
-```
+`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "message": "Deliverer registration submitted. Waiting for admin approval."
 }
-```
+`
 
 ---
 
@@ -101,16 +101,16 @@
 
 **Request Body:**
 
-```json
+`json
 {
   "email": "admin@gmail.com",
   "password": "Admin@123"
 }
-```
+`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "data": {
@@ -122,7 +122,7 @@
     }
   }
 }
-```
+`
 
 ---
 
@@ -132,13 +132,11 @@
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "data": {
@@ -156,7 +154,7 @@ Authorization: Bearer <token>
     }
   }
 }
-```
+`
 
 ---
 
@@ -166,38 +164,36 @@ Authorization: Bearer <token>
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Request Body (Customer):**
 
-```json
+`json
 {
   "fullName": "John Smith",
   "phone": "+9876543210",
   "address": "456 New St, City, Country"
 }
-```
+`
 
 **Request Body (Seller):**
 
-```json
+`json
 {
   "shopName": "Updated Shop Name",
   "documents": ["new-license.pdf"]
 }
-```
+`
 
 **Request Body (Deliverer):**
 
-```json
+`json
 {
   "fullName": "Mike Williams",
   "licenseNumber": "DL789012",
   "NIC": "NIC987654321"
 }
-```
+`
 
 ---
 
@@ -209,13 +205,11 @@ Authorization: Bearer <token>
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Request Body:**
 
-```json
+`json
 {
   "name": "Laptop",
   "description": "High-performance laptop for work and gaming",
@@ -224,11 +218,11 @@ Authorization: Bearer <token>
   "category": "electronics",
   "rating": 4.5
 }
-```
+`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "data": {
@@ -244,7 +238,7 @@ Authorization: Bearer <token>
     "updatedAt": "2024-01-15T10:00:00.000Z"
   }
 }
-```
+`
 
 ---
 
@@ -271,49 +265,35 @@ Authorization: Bearer <token>
 
 **Get all products (default):**
 
-```
-GET /api/products
-```
+`GET /api/products`
 
 **Filter by category and price range:**
 
-```
-GET /api/products?category=electronics&minPrice=100&maxPrice=1000
-```
+`GET /api/products?category=electronics&minPrice=100&maxPrice=1000`
 
 **Search products:**
 
-```
-GET /api/products?search=laptop
-```
+`GET /api/products?search=laptop`
 
 **Filter by rating:**
 
-```
-GET /api/products?minRating=4&maxRating=5
-```
+`GET /api/products?minRating=4&maxRating=5`
 
 **Filter in-stock products:**
 
-```
-GET /api/products?availability=inStock
-```
+`GET /api/products?availability=inStock`
 
 **Sort by price ascending, then rating descending:**
 
-```
-GET /api/products?sort=price,-rating
-```
+`GET /api/products?sort=price,-rating`
 
 **Full example with all filters:**
 
-```
-GET /api/products?category=electronics&minPrice=100&maxPrice=1000&minRating=4&availability=inStock&search=laptop&sort=-rating,price&page=1&limit=20
-```
+`GET /api/products?category=electronics&minPrice=100&maxPrice=1000&minRating=4&availability=inStock&search=laptop&sort=-rating,price&page=1&limit=20`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "count": 20,
@@ -338,7 +318,7 @@ GET /api/products?category=electronics&minPrice=100&maxPrice=1000&minRating=4&av
     }
   ]
 }
-```
+`
 
 ---
 
@@ -348,13 +328,11 @@ GET /api/products?category=electronics&minPrice=100&maxPrice=1000&minRating=4&av
 
 **Example:**
 
-```
-GET /api/products/507f1f77bcf86cd799439020
-```
+`GET /api/products/507f1f77bcf86cd799439020`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "data": {
@@ -371,7 +349,7 @@ GET /api/products/507f1f77bcf86cd799439020
     "rating": 4.5
   }
 }
-```
+`
 
 ---
 
@@ -381,13 +359,11 @@ GET /api/products/507f1f77bcf86cd799439020
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Request Body:**
 
-```json
+`json
 {
   "name": "Updated Laptop",
   "description": "Updated description",
@@ -396,7 +372,7 @@ Authorization: Bearer <token>
   "category": "electronics",
   "rating": 4.7
 }
-```
+`
 
 ---
 
@@ -406,9 +382,7 @@ Authorization: Bearer <token>
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 ---
 
@@ -420,13 +394,11 @@ Authorization: Bearer <token>
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Request Body:**
 
-```json
+`json
 {
   "products": [
     {
@@ -439,11 +411,11 @@ Authorization: Bearer <token>
     }
   ]
 }
-```
+`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "data": {
@@ -472,7 +444,7 @@ Authorization: Bearer <token>
     "updatedAt": "2024-01-15T10:00:00.000Z"
   }
 }
-```
+`
 
 ---
 
@@ -482,9 +454,7 @@ Authorization: Bearer <token>
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Query Parameters:**
 
@@ -504,55 +474,39 @@ Authorization: Bearer <token>
 
 **Get all orders (role-based):**
 
-```
-GET /api/orders
-```
+`GET /api/orders`
 
 **Filter by status:**
 
-```
-GET /api/orders?status=pending
-```
+`GET /api/orders?status=pending`
 
 **Filter by multiple statuses:**
 
-```
-GET /api/orders?status=pending,confirmed
-```
+`GET /api/orders?status=pending,confirmed`
 
 **Filter by date range:**
 
-```
-GET /api/orders?startDate=2024-01-01&endDate=2024-01-31
-```
+`GET /api/orders?startDate=2024-01-01&endDate=2024-01-31`
 
 **Filter by total price range:**
 
-```
-GET /api/orders?minTotalPrice=100&maxTotalPrice=1000
-```
+`GET /api/orders?minTotalPrice=100&maxTotalPrice=1000`
 
 **Search orders:**
 
-```
-GET /api/orders?search=john
-```
+`GET /api/orders?search=john`
 
 **Sort by creation date descending:**
 
-```
-GET /api/orders?sort=-createdAt
-```
+`GET /api/orders?sort=-createdAt`
 
 **Full example:**
 
-```
-GET /api/orders?status=pending,confirmed&startDate=2024-01-01&endDate=2024-01-31&minTotalPrice=100&sort=-createdAt&page=1&limit=10
-```
+`GET /api/orders?status=pending,confirmed&startDate=2024-01-01&endDate=2024-01-31&minTotalPrice=100&sort=-createdAt&page=1&limit=10`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "count": 10,
@@ -577,7 +531,7 @@ GET /api/orders?status=pending,confirmed&startDate=2024-01-01&endDate=2024-01-31
     }
   ]
 }
-```
+`
 
 ---
 
@@ -587,34 +541,32 @@ GET /api/orders?status=pending,confirmed&startDate=2024-01-01&endDate=2024-01-31
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Request Body (Customer - Cancel Order):**
 
-```json
+`json
 {
   "status": "cancelled"
 }
-```
+`
 
 **Request Body (Seller/Admin - Confirm Order):**
 
-```json
+`json
 {
   "status": "confirmed"
 }
-```
+`
 
 **Request Body (Admin - Assign Deliverer):**
 
-```json
+`json
 {
   "status": "shipped",
   "assignedDelivererId": "507f1f77bcf86cd799439025"
 }
-```
+`
 
 ---
 
@@ -626,15 +578,13 @@ Authorization: Bearer <token>
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Query Parameters:**
 
 - `role` - Filter by role (customer, seller, deliverer, admin)
 - `isActive` - Filter by active status (true/false)
-- `approvalStatus` - Filter by approval status (pending, approved, rejected)
+- `status` - Filter by approval status (pending, approved, rejected)
 - `search` - Search by email
 - `sort` - Sort fields (default: updatedAt descending)
 - `page` - Page number (default: 1)
@@ -644,43 +594,31 @@ Authorization: Bearer <token>
 
 **Get all users:**
 
-```
-GET /api/users
-```
+`GET /api/users`
 
 **Filter by role:**
 
-```
-GET /api/users?role=seller
-```
+`GET /api/users?role=seller`
 
 **Filter by active status:**
 
-```
-GET /api/users?isActive=true
-```
+`GET /api/users?isActive=true`
 
 **Filter by approval status:**
 
-```
-GET /api/users?approvalStatus=pending
-```
+`GET /api/users?status=pending`
 
 **Search by email:**
 
-```
-GET /api/users?search=example.com
-```
+`GET /api/users?search=example.com`
 
 **Full example:**
 
-```
-GET /api/users?role=seller&approvalStatus=pending&isActive=true&search=shop&sort=-updatedAt&page=1&limit=20
-```
+`GET /api/users?role=seller&status=pending&isActive=true&search=shop&sort=-updatedAt&page=1&limit=20`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "count": 20,
@@ -700,12 +638,12 @@ GET /api/users?role=seller&approvalStatus=pending&isActive=true&search=shop&sort
       "profile": {
         "_id": "507f1f77bcf86cd799439015",
         "shopName": "Tech Store",
-        "approvalStatus": "pending"
+        "status": "pending"
       }
     }
   ]
 }
-```
+`
 
 ---
 
@@ -715,9 +653,7 @@ GET /api/users?role=seller&approvalStatus=pending&isActive=true&search=shop&sort
 
 **Example:**
 
-```
-GET /api/users/507f1f77bcf86cd799439011
-```
+`GET /api/users/507f1f77bcf86cd799439011`
 
 ---
 
@@ -729,13 +665,11 @@ GET /api/users/507f1f77bcf86cd799439011
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Query Parameters:**
 
-- `approvalStatus` - Filter by approval status (pending, approved, rejected)
+- `status` - Filter by approval status (pending, approved, rejected)
 - `isActive` - Filter by user active status (true/false)
 - `search` - Search by fullName, phone, or address
 - `sort` - Sort fields (default: updatedAt descending)
@@ -746,31 +680,23 @@ Authorization: Bearer <token>
 
 **Get all customers:**
 
-```
-GET /api/customers
-```
+`GET /api/customers`
 
 **Filter by approval status:**
 
-```
-GET /api/customers?approvalStatus=approved
-```
+`GET /api/customers?status=approved`
 
 **Search customers:**
 
-```
-GET /api/customers?search=john
-```
+`GET /api/customers?search=john`
 
 **Full example:**
 
-```
-GET /api/customers?approvalStatus=approved&isActive=true&search=doe&sort=-updatedAt&page=1&limit=20
-```
+`GET /api/customers?status=approved&isActive=true&search=doe&sort=-updatedAt&page=1&limit=20`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "count": 20,
@@ -790,13 +716,13 @@ GET /api/customers?approvalStatus=approved&isActive=true&search=doe&sort=-update
       "fullName": "John Doe",
       "phone": "+1234567890",
       "address": "123 Main St, City, Country",
-      "approvalStatus": "approved",
+      "status": "approved",
       "createdAt": "2024-01-15T10:00:00.000Z",
       "updatedAt": "2024-01-15T10:00:00.000Z"
     }
   ]
 }
-```
+`
 
 ---
 
@@ -806,9 +732,7 @@ GET /api/customers?approvalStatus=approved&isActive=true&search=doe&sort=-update
 
 **Example:**
 
-```
-GET /api/customers/507f1f77bcf86cd799439012
-```
+`GET /api/customers/507f1f77bcf86cd799439012`
 
 ---
 
@@ -820,13 +744,11 @@ GET /api/customers/507f1f77bcf86cd799439012
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Query Parameters:**
 
-- `approvalStatus` - Filter by approval status (pending, approved, rejected)
+- `status` - Filter by approval status (pending, approved, rejected)
 - `isActive` - Filter by user active status (true/false)
 - `search` - Search by shopName
 - `sort` - Sort fields (default: updatedAt descending)
@@ -837,37 +759,27 @@ Authorization: Bearer <token>
 
 **Get all sellers:**
 
-```
-GET /api/sellers
-```
+`GET /api/sellers`
 
 **Get pending sellers:**
 
-```
-GET /api/sellers?approvalStatus=pending
-```
+`GET /api/sellers?status=pending`
 
 **Get approved sellers:**
 
-```
-GET /api/sellers?approvalStatus=approved
-```
+`GET /api/sellers?status=approved`
 
 **Search sellers:**
 
-```
-GET /api/sellers?search=tech
-```
+`GET /api/sellers?search=tech`
 
 **Full example:**
 
-```
-GET /api/sellers?approvalStatus=pending&isActive=true&search=store&sort=-createdAt&page=1&limit=20
-```
+`GET /api/sellers?status=pending&isActive=true&search=store&sort=-createdAt&page=1&limit=20`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "count": 20,
@@ -886,13 +798,13 @@ GET /api/sellers?approvalStatus=pending&isActive=true&search=store&sort=-created
       },
       "shopName": "Tech Store",
       "documents": ["license.pdf"],
-      "approvalStatus": "pending",
+      "status": "pending",
       "createdAt": "2024-01-15T10:00:00.000Z",
       "updatedAt": "2024-01-15T10:00:00.000Z"
     }
   ]
 }
-```
+`
 
 ---
 
@@ -902,9 +814,7 @@ GET /api/sellers?approvalStatus=pending&isActive=true&search=store&sort=-created
 
 **Example:**
 
-```
-GET /api/sellers/507f1f77bcf86cd799439015
-```
+`GET /api/sellers/507f1f77bcf86cd799439015`
 
 ---
 
@@ -914,25 +824,23 @@ GET /api/sellers/507f1f77bcf86cd799439015
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Request Body:** (No body required)
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "data": {
     "_id": "507f1f77bcf86cd799439015",
-    "approvalStatus": "approved",
+    "status": "approved",
     "verifiedAt": "2024-01-15T10:00:00.000Z",
     "reason": null
   }
 }
-```
+`
 
 ---
 
@@ -942,30 +850,28 @@ Authorization: Bearer <token>
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Request Body:**
 
-```json
+`json
 {
   "reason": "Incomplete documentation"
 }
-```
+`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "data": {
     "_id": "507f1f77bcf86cd799439015",
-    "approvalStatus": "rejected",
+    "status": "rejected",
     "reason": "Incomplete documentation"
   }
 }
-```
+`
 
 ---
 
@@ -977,13 +883,11 @@ Authorization: Bearer <token>
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Query Parameters:**
 
-- `approvalStatus` - Filter by approval status (pending, approved, rejected)
+- `status` - Filter by approval status (pending, approved, rejected)
 - `isActive` - Filter by user active status (true/false)
 - `search` - Search by fullName, licenseNumber, or NIC
 - `sort` - Sort fields (default: updatedAt descending)
@@ -994,31 +898,23 @@ Authorization: Bearer <token>
 
 **Get all deliverers:**
 
-```
-GET /api/deliverers
-```
+`GET /api/deliverers`
 
 **Get pending deliverers:**
 
-```
-GET /api/deliverers?approvalStatus=pending
-```
+`GET /api/deliverers?status=pending`
 
 **Search deliverers:**
 
-```
-GET /api/deliverers?search=mike
-```
+`GET /api/deliverers?search=mike`
 
 **Full example:**
 
-```
-GET /api/deliverers?approvalStatus=approved&isActive=true&search=john&sort=-updatedAt&page=1&limit=20
-```
+`GET /api/deliverers?status=approved&isActive=true&search=john&sort=-updatedAt&page=1&limit=20`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "count": 20,
@@ -1038,14 +934,14 @@ GET /api/deliverers?approvalStatus=approved&isActive=true&search=john&sort=-upda
       "fullName": "Mike Johnson",
       "licenseNumber": "DL123456",
       "NIC": "NIC123456789",
-      "approvalStatus": "approved",
+      "status": "approved",
       "verifiedAt": "2024-01-15T10:00:00.000Z",
       "createdAt": "2024-01-15T10:00:00.000Z",
       "updatedAt": "2024-01-15T10:00:00.000Z"
     }
   ]
 }
-```
+`
 
 ---
 
@@ -1055,9 +951,7 @@ GET /api/deliverers?approvalStatus=approved&isActive=true&search=john&sort=-upda
 
 **Example:**
 
-```
-GET /api/deliverers/507f1f77bcf86cd799439025
-```
+`GET /api/deliverers/507f1f77bcf86cd799439025`
 
 ---
 
@@ -1067,9 +961,7 @@ GET /api/deliverers/507f1f77bcf86cd799439025
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Request Body:** (No body required)
 
@@ -1081,17 +973,15 @@ Authorization: Bearer <token>
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Request Body:**
 
-```json
+`json
 {
   "reason": "Invalid license number"
 }
-```
+`
 
 ---
 
@@ -1103,13 +993,11 @@ Authorization: Bearer <token>
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "data": [
@@ -1133,7 +1021,7 @@ Authorization: Bearer <token>
     }
   ]
 }
-```
+`
 
 ---
 
@@ -1143,17 +1031,15 @@ Authorization: Bearer <token>
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Request Body:**
 
-```json
+`json
 {
   "status": "delivered"
 }
-```
+`
 
 **Valid statuses:** `pending`, `in-transit`, `delivered`
 
@@ -1167,13 +1053,11 @@ Authorization: Bearer <token>
 
 **Headers:**
 
-```
-Authorization: Bearer <token>
-```
+`Authorization: Bearer <token>`
 
 **Response:**
 
-```json
+`json
 {
   "success": true,
   "data": {
@@ -1194,7 +1078,7 @@ Authorization: Bearer <token>
     ]
   }
 }
-```
+`
 
 ---
 
@@ -1264,90 +1148,64 @@ Authorization: Bearer <token>
 
 **1. Basic filtering:**
 
-```
-GET /api/products?category=electronics&minPrice=100&maxPrice=1000
-```
+`GET /api/products?category=electronics&minPrice=100&maxPrice=1000`
 
 **2. Search and filter:**
 
-```
-GET /api/products?search=laptop&minRating=4&availability=inStock
-```
+`GET /api/products?search=laptop&minRating=4&availability=inStock`
 
 **3. Sorting:**
 
-```
-GET /api/products?sort=price,-rating
-```
+`GET /api/products?sort=price,-rating`
 
 **4. Full example with pagination:**
 
-```
-GET /api/products?category=electronics&minPrice=100&maxPrice=1000&minRating=4&search=laptop&sort=-rating,price&page=2&limit=10
-```
+`GET /api/products?category=electronics&minPrice=100&maxPrice=1000&minRating=4&search=laptop&sort=-rating,price&page=2&limit=10`
 
 ### Orders Filtering Examples
 
 **1. Filter by status:**
 
-```
-GET /api/orders?status=pending
-```
+`GET /api/orders?status=pending`
 
 **2. Filter by date range:**
 
-```
-GET /api/orders?startDate=2024-01-01&endDate=2024-01-31
-```
+`GET /api/orders?startDate=2024-01-01&endDate=2024-01-31`
 
 **3. Filter by price range:**
 
-```
-GET /api/orders?minTotalPrice=100&maxTotalPrice=500
-```
+`GET /api/orders?minTotalPrice=100&maxTotalPrice=500`
 
 **4. Multiple statuses:**
 
-```
-GET /api/orders?status=pending,confirmed,shipped
-```
+`GET /api/orders?status=pending,confirmed,shipped`
 
 **5. Full example:**
 
-```
-GET /api/orders?status=pending,confirmed&startDate=2024-01-01&endDate=2024-01-31&minTotalPrice=100&sort=-createdAt&page=1&limit=10
-```
+`GET /api/orders?status=pending,confirmed&startDate=2024-01-01&endDate=2024-01-31&minTotalPrice=100&sort=-createdAt&page=1&limit=10`
 
 ### Users/Customers/Sellers/Deliverers Filtering Examples
 
 **1. Filter by approval status:**
 
-```
-GET /api/sellers?approvalStatus=pending
-GET /api/deliverers?approvalStatus=approved
-GET /api/customers?approvalStatus=approved
-```
+`GET /api/sellers?status=pending
+GET /api/deliverers?status=approved
+GET /api/customers?status=approved`
 
 **2. Filter by active status:**
 
-```
-GET /api/users?isActive=true
-GET /api/sellers?isActive=false
-```
+`GET /api/users?isActive=true
+GET /api/sellers?isActive=false`
 
 **3. Search:**
 
-```
-GET /api/sellers?search=tech
+`GET /api/sellers?search=tech
 GET /api/customers?search=john
-GET /api/deliverers?search=mike
-```
+GET /api/deliverers?search=mike`
 
 **4. Combined filters:**
 
-```
-GET /api/sellers?approvalStatus=pending&isActive=true&search=store&sort=-updatedAt&page=1&limit=20
-```
+`GET /api/sellers?status=pending&isActive=true&search=store&sort=-updatedAt&page=1&limit=20`
 
 ---
 
@@ -1355,9 +1213,7 @@ GET /api/sellers?approvalStatus=pending&isActive=true&search=store&sort=-updated
 
 All protected routes require:
 
-```
-Authorization: Bearer <your-jwt-token>
-```
+`Authorization: Bearer <your-jwt-token>`
 
 ---
 
@@ -1365,16 +1221,16 @@ Authorization: Bearer <your-jwt-token>
 
 ### Success Response
 
-```json
+`json
 {
   "success": true,
   "data": { ... }
 }
-```
+`
 
 ### Paginated Response
 
-```json
+`json
 {
   "success": true,
   "count": 20,
@@ -1383,16 +1239,16 @@ Authorization: Bearer <your-jwt-token>
   "currentPage": 1,
   "data": [ ... ]
 }
-```
+`
 
 ### Error Response
 
-```json
+`json
 {
   "success": false,
   "error": "Error message"
 }
-```
+`
 
 ---
 
@@ -1424,29 +1280,29 @@ Authorization: Bearer <your-jwt-token>
 
 1. **Start the server:**
 
-   ```bash
-   npm start
-   ```
+   `bash
+npm start
+`
 
 2. **Seed the database:**
 
-   ```bash
-   npm run seed:all
-   ```
+   `bash
+npm run seed:all
+`
 
 3. **Login as admin:**
 
-   ```bash
-   POST /api/auth/login
-   Body: { "email": "admin@gmail.com", "password": "Admin@123" }
-   ```
+   `bash
+POST /api/auth/login
+Body: { "email": "admin@gmail.com", "password": "Admin@123" }
+`
 
 4. **Test filtering:**
-   ```bash
-   GET /api/products?category=electronics&minPrice=100&sort=-rating&page=1&limit=10
-   GET /api/orders?status=pending&sort=-createdAt&page=1&limit=10
-   GET /api/sellers?approvalStatus=pending&isActive=true
-   ```
+   `bash
+GET /api/products?category=electronics&minPrice=100&sort=-rating&page=1&limit=10
+GET /api/orders?status=pending&sort=-createdAt&page=1&limit=10
+GET /api/sellers?status=pending&isActive=true
+`
 
 ---
 

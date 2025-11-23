@@ -3,13 +3,13 @@ import Customer from "../models/Customer.js";
 import Seller from "../models/Seller.js";
 import Deliverer from "../models/Deliverer.js";
 
-const buildSortQuery = (sortParam) => {
+const buildSortQuery = sortParam => {
   if (!sortParam) return { updatedAt: -1 };
 
   const sortFields = {};
   const fields = sortParam.split(",");
 
-  fields.forEach((field) => {
+  fields.forEach(field => {
     const trimmedField = field.trim();
     if (trimmedField.startsWith("-")) {
       sortFields[trimmedField.substring(1)] = -1;
@@ -27,7 +27,7 @@ const buildSortQuery = (sortParam) => {
  */
 export const getAllUsers = async (req, res, next) => {
   try {
-    const { role, isActive, approvalStatus, search, sort } = req.query;
+    const { role, isActive, status, search, sort } = req.query;
     const filter = {};
 
     // Filter by user role
@@ -63,7 +63,7 @@ export const getAllUsers = async (req, res, next) => {
 
     // Get profiles for all users
     const usersWithProfiles = await Promise.all(
-      users.map(async (user) => {
+      users.map(async user => {
         let profile = null;
 
         if (user.role === "customer") {
@@ -90,9 +90,9 @@ export const getAllUsers = async (req, res, next) => {
 
     // Apply approval status filter if provided
     let filteredUsers = usersWithProfiles;
-    if (approvalStatus) {
-      filteredUsers = usersWithProfiles.filter((item) => {
-        return item.profile && item.profile.approvalStatus === approvalStatus;
+    if (status) {
+      filteredUsers = usersWithProfiles.filter(item => {
+        return item.profile && item.profile.status === status;
       });
     }
 

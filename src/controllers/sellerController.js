@@ -1,13 +1,13 @@
 import Seller from "../models/Seller.js";
 import User from "../models/User.js";
 
-const buildSortQuery = (sortParam) => {
+const buildSortQuery = sortParam => {
   if (!sortParam) return { updatedAt: -1 };
 
   const sortFields = {};
   const fields = sortParam.split(",");
 
-  fields.forEach((field) => {
+  fields.forEach(field => {
     const trimmedField = field.trim();
     if (trimmedField.startsWith("-")) {
       sortFields[trimmedField.substring(1)] = -1;
@@ -21,12 +21,12 @@ const buildSortQuery = (sortParam) => {
 
 export const getAllSellers = async (req, res, next) => {
   try {
-    const { approvalStatus, isActive, search, sort } = req.query;
+    const { status, isActive, search, sort } = req.query;
     const filter = {};
 
     // Filter by approval status
-    if (approvalStatus) {
-      filter.approvalStatus = approvalStatus;
+    if (status) {
+      filter.status = status;
     }
 
     // Filter by user active status (via populate filter)
@@ -65,7 +65,7 @@ export const getAllSellers = async (req, res, next) => {
     const sellers = await query;
 
     // Filter out null userIds (when user filter doesn't match)
-    const filteredSellers = sellers.filter((s) => s.userId !== null);
+    const filteredSellers = sellers.filter(s => s.userId !== null);
 
     const totalPages = Math.ceil(total / limit);
 
@@ -116,7 +116,7 @@ export const approveSeller = async (req, res, next) => {
       });
     }
 
-    seller.approvalStatus = "approved";
+    seller.status = "approved";
     seller.verifiedAt = new Date();
     seller.reason = undefined;
     await seller.save();
@@ -147,7 +147,7 @@ export const rejectSeller = async (req, res, next) => {
       });
     }
 
-    seller.approvalStatus = "rejected";
+    seller.status = "rejected";
     seller.reason = reason || "Rejected by admin";
     await seller.save();
 

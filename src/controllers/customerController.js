@@ -1,13 +1,13 @@
 import Customer from "../models/Customer.js";
 import User from "../models/User.js";
 
-const buildSortQuery = (sortParam) => {
+const buildSortQuery = sortParam => {
   if (!sortParam) return { updatedAt: -1 };
 
   const sortFields = {};
   const fields = sortParam.split(",");
 
-  fields.forEach((field) => {
+  fields.forEach(field => {
     const trimmedField = field.trim();
     if (trimmedField.startsWith("-")) {
       sortFields[trimmedField.substring(1)] = -1;
@@ -21,12 +21,12 @@ const buildSortQuery = (sortParam) => {
 
 export const getAllCustomers = async (req, res, next) => {
   try {
-    const { approvalStatus, isActive, search, sort } = req.query;
+    const { status, isActive, search, sort } = req.query;
     const filter = {};
 
     // Filter by approval status
-    if (approvalStatus) {
-      filter.approvalStatus = approvalStatus;
+    if (status) {
+      filter.status = status;
     }
 
     // Filter by user active status (via populate filter)
@@ -69,7 +69,7 @@ export const getAllCustomers = async (req, res, next) => {
     const customers = await query;
 
     // Filter out null userIds (when user filter doesn't match)
-    const filteredCustomers = customers.filter((c) => c.userId !== null);
+    const filteredCustomers = customers.filter(c => c.userId !== null);
 
     const totalPages = Math.ceil(total / limit);
 

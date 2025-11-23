@@ -76,7 +76,7 @@ export const createOrder = async (req, res, next) => {
   }
 };
 
-const buildOrderQuery = async (req) => {
+const buildOrderQuery = async req => {
   const {
     status,
     customerId,
@@ -105,8 +105,10 @@ const buildOrderQuery = async (req) => {
       // Sellers see orders containing their products
       const seller = await Seller.findOne({ userId: req.user._id });
       if (seller) {
-        const sellerProducts = await Product.find({ sellerId: seller._id }).select("_id");
-        const productIds = sellerProducts.map((p) => p._id);
+        const sellerProducts = await Product.find({
+          sellerId: seller._id,
+        }).select("_id");
+        const productIds = sellerProducts.map(p => p._id);
         filter["products.productId"] = { $in: productIds };
       } else {
         // Return empty result if seller profile not found
@@ -116,8 +118,10 @@ const buildOrderQuery = async (req) => {
       // Deliverers see only assigned orders
       const deliverer = await Deliverer.findOne({ userId: req.user._id });
       if (deliverer) {
-        const deliveries = await Delivery.find({ delivererId: deliverer._id }).select("orderId");
-        const orderIds = deliveries.map((d) => d.orderId);
+        const deliveries = await Delivery.find({
+          delivererId: deliverer._id,
+        }).select("orderId");
+        const orderIds = deliveries.map(d => d.orderId);
         filter._id = { $in: orderIds };
       } else {
         // Return empty result if deliverer profile not found
@@ -145,7 +149,7 @@ const buildOrderQuery = async (req) => {
   // Seller ID filter (admin only - orders containing seller's products)
   if (sellerId && req.user?.role === "admin") {
     const sellerProducts = await Product.find({ sellerId }).select("_id");
-    const productIds = sellerProducts.map((p) => p._id);
+    const productIds = sellerProducts.map(p => p._id);
     if (productIds.length > 0) {
       filter["products.productId"] = { $in: productIds };
     } else {
@@ -183,7 +187,7 @@ const buildOrderQuery = async (req) => {
           { phone: { $regex: search, $options: "i" } },
         ],
       }).select("_id");
-      const customerIds = customers.map((c) => c._id);
+      const customerIds = customers.map(c => c._id);
       if (customerIds.length > 0) {
         filter.customerId = { $in: customerIds };
       } else {
@@ -205,13 +209,13 @@ const buildOrderQuery = async (req) => {
   return filter;
 };
 
-const buildSortQuery = (sortParam) => {
+const buildSortQuery = sortParam => {
   if (!sortParam) return { updatedAt: -1 };
 
   const sortFields = {};
   const fields = sortParam.split(",");
 
-  fields.forEach((field) => {
+  fields.forEach(field => {
     const trimmedField = field.trim();
     if (trimmedField.startsWith("-")) {
       sortFields[trimmedField.substring(1)] = -1;
@@ -249,7 +253,10 @@ export const getOrders = async (req, res, next) => {
         { path: "assignedDelivererId", select: "fullName" }
       );
     } else if (req.user?.role === "deliverer") {
-      populateFields.push({ path: "customerId", select: "fullName phone address" });
+      populateFields.push({
+        path: "customerId",
+        select: "fullName phone address",
+      });
     } else if (req.user?.role === "admin") {
       populateFields.push(
         { path: "customerId", select: "fullName phone address" },
@@ -260,7 +267,7 @@ export const getOrders = async (req, res, next) => {
     // Get orders with pagination
     let query = Order.find(filter).sort(sort).skip(skip).limit(limit);
 
-    populateFields.forEach((populate) => {
+    populateFields.forEach(populate => {
       query = query.populate(populate);
     });
 
@@ -339,13 +346,18 @@ export const updateOrder = async (req, res, next) => {
     }
 
     if (req.user.role === "admin") {
-      if (status && ["pending", "confirmed", "shipped", "delivered", "cancelled"].includes(status)) {
+      if (
+        status &&
+        ["pending", "confirmed", "shipped", "delivered", "cancelled"].includes(
+          status
+        )
+      ) {
         order.status = status;
 
         if (assignedDelivererId && !order.assignedDelivererId) {
           const deliverer = await Deliverer.findById(assignedDelivererId);
 
-          if (!deliverer || deliverer.approvalStatus !== "approved") {
+          if (!deliverer || deliverer.status !== "approved") {
             return res.status(400).json({
               success: false,
               error: "Invalid or unapproved deliverer",
@@ -354,7 +366,9 @@ export const updateOrder = async (req, res, next) => {
 
           order.assignedDelivererId = assignedDelivererId;
 
-          const existingDelivery = await Delivery.findOne({ orderId: order._id });
+          const existingDelivery = await Delivery.findOne({
+            orderId: order._id,
+          });
           if (!existingDelivery) {
             await Delivery.create({
               orderId: order._id,
