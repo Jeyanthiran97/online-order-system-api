@@ -60,9 +60,17 @@ export const registerSeller = async (req, res, next) => {
     if (existingUser) {
       const existingSeller = await Seller.findOne({ userId: existingUser._id });
       if (existingSeller && existingSeller.status === "pending") {
-        return res.status(400).json({
-          success: false,
-          error: "Seller registration already pending",
+        // Update existing user and seller
+        existingUser.password = password;
+        await existingUser.save();
+
+        existingSeller.shopName = shopName;
+        existingSeller.documents = documents || [];
+        await existingSeller.save();
+
+        return res.status(200).json({
+          success: true,
+          message: "Seller registration updated. Waiting for admin approval.",
         });
       }
       return res.status(400).json({
@@ -102,9 +110,18 @@ export const registerDeliverer = async (req, res, next) => {
         userId: existingUser._id,
       });
       if (existingDeliverer && existingDeliverer.status === "pending") {
-        return res.status(400).json({
-          success: false,
-          error: "Deliverer registration already pending",
+        // Update existing user and deliverer
+        existingUser.password = password;
+        await existingUser.save();
+
+        existingDeliverer.fullName = fullName;
+        existingDeliverer.licenseNumber = licenseNumber;
+        existingDeliverer.NIC = NIC;
+        await existingDeliverer.save();
+
+        return res.status(200).json({
+          success: true,
+          message: "Deliverer registration updated. Waiting for admin approval.",
         });
       }
       return res.status(400).json({
@@ -285,8 +302,8 @@ export const updateMe = async (req, res, next) => {
       user.role === "customer"
         ? await Customer.findOne({ userId: user._id })
         : user.role === "seller"
-        ? await Seller.findOne({ userId: user._id })
-        : await Deliverer.findOne({ userId: user._id });
+          ? await Seller.findOne({ userId: user._id })
+          : await Deliverer.findOne({ userId: user._id });
 
     res.json({
       success: true,
