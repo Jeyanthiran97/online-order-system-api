@@ -333,51 +333,10 @@ export const updateOrder = async (req, res, next) => {
       }
     }
 
-    if (req.user.role === "seller" || req.user.role === "admin") {
+    if (req.user.role === "seller") {
+      // Sellers can confirm pending orders
       if (status === "confirmed" && order.status === "pending") {
         order.status = "confirmed";
-        await order.save();
-
-        return res.json({
-          success: true,
-          data: order,
-        });
-      }
-    }
-
-    if (req.user.role === "admin") {
-      if (
-        status &&
-        ["pending", "confirmed", "shipped", "delivered", "cancelled"].includes(
-          status
-        )
-      ) {
-        order.status = status;
-
-        if (assignedDelivererId && !order.assignedDelivererId) {
-          const deliverer = await Deliverer.findById(assignedDelivererId);
-
-          if (!deliverer || deliverer.status !== "approved") {
-            return res.status(400).json({
-              success: false,
-              error: "Invalid or unapproved deliverer",
-            });
-          }
-
-          order.assignedDelivererId = assignedDelivererId;
-
-          const existingDelivery = await Delivery.findOne({
-            orderId: order._id,
-          });
-          if (!existingDelivery) {
-            await Delivery.create({
-              orderId: order._id,
-              delivererId: assignedDelivererId,
-              status: "pending",
-            });
-          }
-        }
-
         await order.save();
 
         const populatedOrder = await Order.findById(order._id)
@@ -390,6 +349,150 @@ export const updateOrder = async (req, res, next) => {
           data: populatedOrder,
         });
       }
+
+      // Sellers can ship confirmed orders (requires deliverer)
+      if (status === "shipped" && order.status === "confirmed") {
+        if (!order.assignedDelivererId) {
+          return res.status(400).json({
+            success: false,
+            error: "Cannot ship order without assigned deliverer",
+          });
+        }
+
+        order.status = "shipped";
+        await order.save();
+
+        // Update delivery status to in-transit
+        const delivery = await Delivery.findOne({ orderId: order._id });
+        if (delivery) {
+          delivery.status = "in-transit";
+          await delivery.save();
+        }
+
+        const populatedOrder = await Order.findById(order._id)
+          .populate("products.productId", "name description price")
+          .populate("customerId", "fullName phone address")
+          .populate("assignedDelivererId", "fullName");
+
+        return res.json({
+          success: true,
+          data: populatedOrder,
+        });
+      }
+
+      return res.status(403).json({
+        success: false,
+        error: "Not authorized to perform this action",
+      });
+    }
+
+    if (req.user.role === "admin") {
+      let hasChanges = false;
+
+      // Handle status change
+      if (
+        status &&
+        ["pending", "confirmed", "shipped", "delivered", "cancelled"].includes(
+          status
+        )
+      ) {
+        // Validate status transitions
+        const validTransitions = {
+          pending: ["confirmed", "cancelled"],
+          confirmed: ["shipped", "cancelled"],
+          shipped: ["delivered", "cancelled"],
+          delivered: [], // Final state
+          cancelled: [], // Final state
+        };
+
+        if (!validTransitions[order.status]?.includes(status)) {
+          return res.status(400).json({
+            success: false,
+            error: `Cannot change order status from ${order.status} to ${status}`,
+          });
+        }
+
+        order.status = status;
+        hasChanges = true;
+
+        // If cancelling, restore stock
+        if (status === "cancelled") {
+          for (const item of order.products) {
+            const product = await Product.findById(item.productId);
+            if (product) {
+              product.stock += item.quantity;
+              await product.save();
+            }
+          }
+        }
+      }
+
+      // Handle deliverer assignment (can be done independently of status change)
+      if (assignedDelivererId) {
+        // Allow changing deliverer if order is not delivered or cancelled
+        if (order.status === "delivered" || order.status === "cancelled") {
+          return res.status(400).json({
+            success: false,
+            error: "Cannot assign deliverer to delivered or cancelled orders",
+          });
+        }
+
+        const deliverer = await Deliverer.findById(assignedDelivererId);
+
+        if (!deliverer || deliverer.status !== "approved") {
+          return res.status(400).json({
+            success: false,
+            error: "Invalid or unapproved deliverer",
+          });
+        }
+
+        // If changing deliverer, update existing delivery or create new one
+        const existingDelivery = await Delivery.findOne({
+          orderId: order._id,
+        });
+
+        if (existingDelivery) {
+          // Update existing delivery with new deliverer
+          existingDelivery.delivererId = assignedDelivererId;
+          if (existingDelivery.status === "delivered") {
+            return res.status(400).json({
+              success: false,
+              error: "Cannot change deliverer for already delivered order",
+            });
+          }
+          await existingDelivery.save();
+        } else {
+          // Create new delivery record
+          await Delivery.create({
+            orderId: order._id,
+            delivererId: assignedDelivererId,
+            status: order.status === "shipped" ? "in-transit" : "pending",
+          });
+        }
+
+        order.assignedDelivererId = assignedDelivererId;
+        hasChanges = true;
+      }
+
+      // If no changes were made, return error
+      if (!hasChanges) {
+        return res.status(400).json({
+          success: false,
+          error: "No valid changes provided",
+        });
+      }
+
+      await order.save();
+
+      const populatedOrder = await Order.findById(order._id)
+        .populate("products.productId", "name description price")
+        .populate("customerId", "fullName phone address")
+        .populate("assignedDelivererId", "fullName");
+
+      return res.json({
+        success: true,
+        data: populatedOrder,
+      });
     }
 
     return res.status(403).json({
