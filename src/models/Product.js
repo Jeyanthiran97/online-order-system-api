@@ -36,6 +36,27 @@ const productSchema = new mongoose.Schema({
     min: [0, 'Rating must be between 0 and 5'],
     max: [5, 'Rating must be between 0 and 5'],
     default: 0
+  },
+  images: {
+    type: [String],
+    default: [],
+    validate: {
+      validator: function(v) {
+        return v.length <= 5;
+      },
+      message: 'Maximum 5 images allowed per product'
+    }
+  },
+  mainImageIndex: {
+    type: Number,
+    default: 0,
+    min: 0,
+    validate: {
+      validator: function(v) {
+        return !this.images || v < this.images.length;
+      },
+      message: 'Main image index must be within the images array bounds'
+    }
   }
 }, {
   timestamps: true

@@ -4,7 +4,7 @@ import Category from "../models/Category.js";
 
 export const createProduct = async (req, res, next) => {
   try {
-    const { name, description, price, stock, category, rating } = req.body;
+    const { name, description, price, stock, category, rating, mainImageIndex } = req.body;
 
     // Validate category exists and is active (category is required)
     if (!category) {
@@ -26,6 +26,18 @@ export const createProduct = async (req, res, next) => {
       });
     }
 
+    // Process uploaded images
+    let imageUrls = [];
+    if (req.files && req.files.length > 0) {
+      imageUrls = req.files.map(file => `/uploads/products/${file.filename}`);
+    }
+
+    // Validate mainImageIndex
+    let mainIdx = mainImageIndex ? parseInt(mainImageIndex, 10) : 0;
+    if (imageUrls.length > 0 && (mainIdx < 0 || mainIdx >= imageUrls.length)) {
+      mainIdx = 0; // Default to first image if invalid
+    }
+
     const product = await Product.create({
       sellerId: req.seller._id,
       name,
@@ -34,6 +46,8 @@ export const createProduct = async (req, res, next) => {
       stock,
       category: category ? category.toLowerCase().trim() : category,
       rating: rating || 0,
+      images: imageUrls,
+      mainImageIndex: mainIdx,
     });
 
     res.status(201).json({
@@ -262,6 +276,43 @@ export const updateProduct = async (req, res, next) => {
       // Normalize category name
       req.body.category = req.body.category.toLowerCase().trim();
     }
+
+    // Process uploaded images
+    let imageUrls = [...(product.images || [])];
+    if (req.files && req.files.length > 0) {
+      const newImageUrls = req.files.map(file => `/uploads/products/${file.filename}`);
+      // If existingImages is provided in body, it means we're replacing images
+      // Otherwise, append new images (up to 5 total)
+      if (req.body.existingImages) {
+        // Parse existing images from body (comma-separated string or array)
+        const existingImages = Array.isArray(req.body.existingImages) 
+          ? req.body.existingImages 
+          : req.body.existingImages.split(',').filter(Boolean);
+        imageUrls = [...existingImages, ...newImageUrls].slice(0, 5);
+      } else {
+        // Append new images to existing ones
+        imageUrls = [...imageUrls, ...newImageUrls].slice(0, 5);
+      }
+    } else if (req.body.existingImages) {
+      // No new files, but existing images were updated (removed some)
+      const existingImages = Array.isArray(req.body.existingImages) 
+        ? req.body.existingImages 
+        : req.body.existingImages.split(',').filter(Boolean);
+      imageUrls = existingImages;
+    }
+
+    // Handle mainImageIndex
+    if (req.body.mainImageIndex !== undefined) {
+      const mainIdx = parseInt(req.body.mainImageIndex, 10);
+      if (mainIdx >= 0 && mainIdx < imageUrls.length) {
+        req.body.mainImageIndex = mainIdx;
+      } else if (imageUrls.length > 0) {
+        req.body.mainImageIndex = 0; // Default to first image if invalid
+      }
+    }
+
+    // Update images in request body
+    req.body.images = imageUrls;
 
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
