@@ -8,6 +8,7 @@ import Product from '../models/Product.js';
 import Order from '../models/Order.js';
 import Delivery from '../models/Delivery.js';
 import Analytics from '../models/Analytics.js';
+import Category from '../models/Category.js';
 
 dotenv.config();
 
@@ -26,6 +27,9 @@ const clearAllData = async () => {
 
     await Product.deleteMany({});
     console.log('Cleared products');
+
+    await Category.deleteMany({});
+    console.log('Cleared categories');
 
     await Deliverer.deleteMany({});
     console.log('Cleared deliverers');

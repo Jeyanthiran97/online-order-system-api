@@ -7,6 +7,7 @@ import Deliverer from "../models/Deliverer.js";
 import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import Delivery from "../models/Delivery.js";
+import Category from "../models/Category.js";
 
 dotenv.config();
 
@@ -115,6 +116,39 @@ const seedSampleData = async () => {
 
     console.log("Created 2 approved deliverers");
 
+    // Create sample categories
+    const categoryElectronics = await Category.create({
+      name: "electronics",
+      description: "Electronic devices and accessories",
+      isActive: true,
+    });
+
+    const categoryClothing = await Category.create({
+      name: "clothing",
+      description: "Apparel and fashion items",
+      isActive: true,
+    });
+
+    const categoryFood = await Category.create({
+      name: "food",
+      description: "Food and beverages",
+      isActive: true,
+    });
+
+    const categoryBooks = await Category.create({
+      name: "books",
+      description: "Books and reading materials",
+      isActive: true,
+    });
+
+    const categoryOther = await Category.create({
+      name: "other",
+      description: "Other miscellaneous items",
+      isActive: true,
+    });
+
+    console.log("Created 5 categories");
+
     // Create sample products
     const product1 = await Product.create({
       sellerId: sellerProfile1._id,
@@ -122,6 +156,7 @@ const seedSampleData = async () => {
       description: "High-performance laptop for work and gaming",
       price: 300000, // LKR
       stock: 50,
+      category: categoryElectronics.name,
     });
 
     const product2 = await Product.create({
@@ -130,6 +165,7 @@ const seedSampleData = async () => {
       description: "Latest smartphone with advanced features",
       price: 210000, // LKR
       stock: 100,
+      category: categoryElectronics.name,
     });
 
     const product3 = await Product.create({
@@ -138,6 +174,7 @@ const seedSampleData = async () => {
       description: "Ergonomic wireless mouse",
       price: 9000, // LKR
       stock: 200,
+      category: categoryElectronics.name,
     });
 
     const product4 = await Product.create({
@@ -146,6 +183,7 @@ const seedSampleData = async () => {
       description: "Cotton t-shirt, comfortable and stylish",
       price: 6000, // LKR
       stock: 150,
+      category: categoryClothing.name,
     });
 
     const product5 = await Product.create({
@@ -154,6 +192,7 @@ const seedSampleData = async () => {
       description: "Classic blue jeans",
       price: 15000, // LKR
       stock: 80,
+      category: categoryClothing.name,
     });
 
     const product6 = await Product.create({
@@ -162,6 +201,7 @@ const seedSampleData = async () => {
       description: "Comfortable running sneakers",
       price: 24000, // LKR
       stock: 60,
+      category: categoryClothing.name,
     });
 
     console.log("Created 6 products");
@@ -254,6 +294,7 @@ const seedSampleData = async () => {
     console.log("- 2 Customers");
     console.log("- 2 Approved Sellers");
     console.log("- 2 Approved Deliverers");
+    console.log("- 5 Categories");
     console.log("- 6 Products");
     console.log("- 4 Orders");
     console.log("- 3 Deliveries");

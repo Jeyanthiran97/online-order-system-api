@@ -1,9 +1,30 @@
 import Product from "../models/Product.js";
 import Seller from "../models/Seller.js";
+import Category from "../models/Category.js";
 
 export const createProduct = async (req, res, next) => {
   try {
     const { name, description, price, stock, category, rating } = req.body;
+
+    // Validate category exists and is active (category is required)
+    if (!category) {
+      return res.status(400).json({
+        success: false,
+        error: "Category is required",
+      });
+    }
+
+    const categoryDoc = await Category.findOne({ 
+      name: category.toLowerCase().trim(),
+      isActive: true 
+    });
+    
+    if (!categoryDoc) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid category. Please select a valid category.",
+      });
+    }
 
     const product = await Product.create({
       sellerId: req.seller._id,
@@ -11,7 +32,7 @@ export const createProduct = async (req, res, next) => {
       description,
       price,
       stock,
-      category,
+      category: category ? category.toLowerCase().trim() : category,
       rating: rating || 0,
     });
 
@@ -20,6 +41,12 @@ export const createProduct = async (req, res, next) => {
       data: product,
     });
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        error: Object.values(error.errors).map(e => e.message).join(', '),
+      });
+    }
     next(error);
   }
 };
@@ -218,6 +245,24 @@ export const updateProduct = async (req, res, next) => {
       }
     }
 
+    // Validate category if provided
+    if (req.body.category) {
+      const categoryDoc = await Category.findOne({ 
+        name: req.body.category.toLowerCase().trim(),
+        isActive: true 
+      });
+      
+      if (!categoryDoc) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid category. Please select a valid category.",
+        });
+      }
+      
+      // Normalize category name
+      req.body.category = req.body.category.toLowerCase().trim();
+    }
+
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -229,6 +274,12 @@ export const updateProduct = async (req, res, next) => {
       data: updatedProduct,
     });
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        error: Object.values(error.errors).map(e => e.message).join(', '),
+      });
+    }
     next(error);
   }
 };

@@ -28,6 +28,7 @@ const productSchema = new mongoose.Schema({
   },
   category: {
     type: String,
+    required: [true, 'Category is required'],
     trim: true
   },
   rating: {

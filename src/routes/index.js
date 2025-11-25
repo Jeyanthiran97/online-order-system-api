@@ -8,6 +8,7 @@ import usersRoutes from "./usersRoutes.js";
 import customersRoutes from "./customersRoutes.js";
 import sellersRoutes from "./sellersRoutes.js";
 import deliverersRoutes from "./deliverersRoutes.js";
+import categoriesRoutes from "./categoriesRoutes.js";
 
 const router = express.Router();
 
@@ -37,6 +38,9 @@ router.use("/deliverers", deliverersRoutes);
 
 // Analytics routes (admin only)
 router.use("/analytics", analyticsRoutes);
+
+// Category routes
+router.use("/categories", categoriesRoutes);
 
 export default router;
 
