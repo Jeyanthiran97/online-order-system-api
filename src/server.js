@@ -11,8 +11,28 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://jey-shop.vercel.app',
+  process.env.CLIENT_URL,
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests) only in development
+    if (!origin) {
+      if (process.env.NODE_ENV === 'production') {
+        return callback(new Error('Not allowed by CORS'));
+      }
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
