@@ -24,7 +24,7 @@ export const createProduct = async (req, res, next) => {
   }
 };
 
-const buildProductQuery = (req) => {
+const buildProductQuery = async (req) => {
   const {
     category,
     minPrice,
@@ -43,11 +43,19 @@ const buildProductQuery = (req) => {
   if (req.user) {
     if (req.user.role === "seller") {
       // Sellers only see their own products
+      // Fetch seller profile if not already set (for GET route with authOptional)
+      if (!req.seller) {
+        const seller = await Seller.findOne({ userId: req.user._id });
+        if (seller) {
+          req.seller = seller;
+        }
+      }
       if (req.seller) {
         filter.sellerId = req.seller._id;
       }
     }
-    // Admin and customer can see all products (no sellerId filter)
+    // Admin can see all products (no sellerId filter unless ?sellerId= is provided)
+    // Customer can see all products (no sellerId filter)
   }
 
   // Category filter
@@ -93,9 +101,14 @@ const buildProductQuery = (req) => {
     ];
   }
 
-  // Seller ID filter (admin can filter by seller)
-  if (sellerId && (req.user?.role === "admin" || !req.user)) {
-    filter.sellerId = sellerId;
+  // Seller ID filter (admin can filter by seller, or public can filter)
+  if (sellerId) {
+    // Admin can filter by any sellerId
+    // Public/unauthenticated users can also filter by sellerId
+    // But if user is seller, we already filtered by their sellerId above, so ignore this
+    if (req.user?.role !== "seller") {
+      filter.sellerId = sellerId;
+    }
   }
 
   return filter;
@@ -121,7 +134,7 @@ const buildSortQuery = (sortParam) => {
 
 export const getProducts = async (req, res, next) => {
   try {
-    const filter = buildProductQuery(req);
+    const filter = await buildProductQuery(req);
     const sort = buildSortQuery(req.query.sort);
 
     // Pagination
@@ -188,11 +201,21 @@ export const updateProduct = async (req, res, next) => {
       });
     }
 
-    if (product.sellerId.toString() !== req.seller._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        error: "Not authorized to update this product",
-      });
+    // Admin can update any product, seller can only update their own
+    if (req.user.role !== "admin") {
+      // For sellers, check ownership
+      if (!req.seller) {
+        return res.status(403).json({
+          success: false,
+          error: "Not authorized to update this product",
+        });
+      }
+      if (product.sellerId.toString() !== req.seller._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          error: "Not authorized to update this product",
+        });
+      }
     }
 
     const updatedProduct = await Product.findByIdAndUpdate(
@@ -221,11 +244,21 @@ export const deleteProduct = async (req, res, next) => {
       });
     }
 
-    if (product.sellerId.toString() !== req.seller._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        error: "Not authorized to delete this product",
-      });
+    // Admin can delete any product, seller can only delete their own
+    if (req.user.role !== "admin") {
+      // For sellers, check ownership
+      if (!req.seller) {
+        return res.status(403).json({
+          success: false,
+          error: "Not authorized to delete this product",
+        });
+      }
+      if (product.sellerId.toString() !== req.seller._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          error: "Not authorized to delete this product",
+        });
+      }
     }
 
     await Product.findByIdAndDelete(req.params.id);

@@ -78,3 +78,38 @@ export const requireApprovedDeliverer = async (req, res, next) => {
     });
   }
 };
+
+export const requireAdminOrApprovedSeller = async (req, res, next) => {
+  try {
+    // Admin can access directly
+    if (req.user.role === "admin") {
+      return next();
+    }
+
+    // For sellers, check approval status
+    if (req.user.role !== "seller") {
+      return res.status(403).json({
+        success: false,
+        error: "Access denied. Admin or seller role required",
+      });
+    }
+
+    const Seller = (await import("../models/Seller.js")).default;
+    const seller = await Seller.findOne({ userId: req.user._id });
+
+    if (!seller || seller.status !== "approved") {
+      return res.status(403).json({
+        success: false,
+        error: "Seller account not approved",
+      });
+    }
+
+    req.seller = seller;
+    next();
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: "Error checking seller status",
+    });
+  }
+};

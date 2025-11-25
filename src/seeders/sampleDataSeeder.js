@@ -120,7 +120,7 @@ const seedSampleData = async () => {
       sellerId: sellerProfile1._id,
       name: "Laptop",
       description: "High-performance laptop for work and gaming",
-      price: 999.99,
+      price: 300000, // LKR
       stock: 50,
     });
 
@@ -128,7 +128,7 @@ const seedSampleData = async () => {
       sellerId: sellerProfile1._id,
       name: "Smartphone",
       description: "Latest smartphone with advanced features",
-      price: 699.99,
+      price: 210000, // LKR
       stock: 100,
     });
 
@@ -136,7 +136,7 @@ const seedSampleData = async () => {
       sellerId: sellerProfile1._id,
       name: "Wireless Mouse",
       description: "Ergonomic wireless mouse",
-      price: 29.99,
+      price: 9000, // LKR
       stock: 200,
     });
 
@@ -144,7 +144,7 @@ const seedSampleData = async () => {
       sellerId: sellerProfile2._id,
       name: "T-Shirt",
       description: "Cotton t-shirt, comfortable and stylish",
-      price: 19.99,
+      price: 6000, // LKR
       stock: 150,
     });
 
@@ -152,7 +152,7 @@ const seedSampleData = async () => {
       sellerId: sellerProfile2._id,
       name: "Jeans",
       description: "Classic blue jeans",
-      price: 49.99,
+      price: 15000, // LKR
       stock: 80,
     });
 
@@ -160,7 +160,7 @@ const seedSampleData = async () => {
       sellerId: sellerProfile2._id,
       name: "Sneakers",
       description: "Comfortable running sneakers",
-      price: 79.99,
+      price: 24000, // LKR
       stock: 60,
     });
 
