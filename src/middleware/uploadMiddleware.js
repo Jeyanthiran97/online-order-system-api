@@ -6,16 +6,61 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, '../../uploads/products');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+// Determine uploads directory based on environment
+// In serverless environments (like AWS Lambda), use /tmp
+// Otherwise, use the project's uploads directory
+const getUploadsDir = () => {
+  // Check if we're in a serverless environment (common indicators)
+  const isServerless = process.env.AWS_LAMBDA_FUNCTION_NAME || 
+                       process.env.VERCEL || 
+                       process.env.LAMBDA_TASK_ROOT ||
+                       !fs.existsSync(path.join(__dirname, '../../uploads'));
+  
+  if (isServerless) {
+    // Use /tmp for serverless environments
+    return path.join('/tmp', 'uploads', 'products');
+  } else {
+    // Use project directory for local/regular server environments
+    return path.join(__dirname, '../../uploads/products');
+  }
+};
+
+// Function to ensure directory exists (called lazily)
+const ensureUploadsDir = () => {
+  const uploadsDir = getUploadsDir();
+  try {
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+  } catch (error) {
+    console.error('Error creating uploads directory:', error);
+    // If directory creation fails, try /tmp as fallback
+    if (!uploadsDir.startsWith('/tmp')) {
+      const tmpDir = path.join('/tmp', 'uploads', 'products');
+      try {
+        if (!fs.existsSync(tmpDir)) {
+          fs.mkdirSync(tmpDir, { recursive: true });
+        }
+        return tmpDir;
+      } catch (tmpError) {
+        console.error('Error creating /tmp uploads directory:', tmpError);
+        throw new Error('Unable to create uploads directory');
+      }
+    }
+    throw error;
+  }
+  return uploadsDir;
+};
 
 // Configure storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadsDir);
+    try {
+      const uploadsDir = ensureUploadsDir();
+      cb(null, uploadsDir);
+    } catch (error) {
+      cb(error, null);
+    }
   },
   filename: (req, file, cb) => {
     // Generate unique filename: timestamp-random-originalname

@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import connectDB from './config/db.js';
 import routes from './routes/index.js';
 import errorMiddleware from './middleware/errorMiddleware.js';
@@ -44,8 +45,20 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from uploads directory
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve static files from uploads directory (only in non-serverless environments)
+// In serverless environments, files should be served from cloud storage (S3, Cloudinary, etc.)
+const isServerless = process.env.AWS_LAMBDA_FUNCTION_NAME || 
+                     process.env.VERCEL || 
+                     process.env.LAMBDA_TASK_ROOT;
+const uploadsPath = path.join(__dirname, '../uploads');
+
+if (!isServerless && fs.existsSync(uploadsPath)) {
+  app.use('/uploads', express.static(uploadsPath));
+} else if (isServerless) {
+  // In serverless, you might want to serve from /tmp or use cloud storage
+  // For now, we'll skip static file serving in serverless
+  console.log('Static file serving disabled in serverless environment. Use cloud storage for file serving.');
+}
 
 connectDB();
 

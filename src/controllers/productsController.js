@@ -8,6 +8,24 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Helper function to get uploads directory path
+// Handles both regular servers and serverless environments
+const getUploadsDir = () => {
+  // Check if we're in a serverless environment
+  const isServerless = process.env.AWS_LAMBDA_FUNCTION_NAME || 
+                       process.env.VERCEL || 
+                       process.env.LAMBDA_TASK_ROOT ||
+                       !fs.existsSync(path.join(__dirname, '../../uploads'));
+  
+  if (isServerless) {
+    // Use /tmp for serverless environments
+    return path.join('/tmp', 'uploads', 'products');
+  } else {
+    // Use project directory for local/regular server environments
+    return path.join(__dirname, '../../uploads/products');
+  }
+};
+
 export const createProduct = async (req, res, next) => {
   try {
     const { name, description, price, stock, category, rating, mainImageIndex } = req.body;
@@ -311,7 +329,7 @@ export const updateProduct = async (req, res, next) => {
     // Delete removed image files from filesystem
     const removedImages = oldImages.filter(img => !imageUrls.includes(img));
     if (removedImages.length > 0) {
-      const uploadsDir = path.join(__dirname, '../../uploads/products');
+      const uploadsDir = getUploadsDir();
       removedImages.forEach(imageUrl => {
         // Extract filename from URL (e.g., /uploads/products/filename.jpg -> filename.jpg)
         const filename = imageUrl.replace('/uploads/products/', '');
@@ -394,7 +412,7 @@ export const deleteProduct = async (req, res, next) => {
 
     // Delete all product images from filesystem
     if (product.images && product.images.length > 0) {
-      const uploadsDir = path.join(__dirname, '../../uploads/products');
+      const uploadsDir = getUploadsDir();
       product.images.forEach(imageUrl => {
         // Extract filename from URL (e.g., /uploads/products/filename.jpg -> filename.jpg)
         const filename = imageUrl.replace('/uploads/products/', '');
