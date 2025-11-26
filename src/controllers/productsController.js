@@ -1,6 +1,12 @@
 import Product from "../models/Product.js";
 import Seller from "../models/Seller.js";
 import Category from "../models/Category.js";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const createProduct = async (req, res, next) => {
   try {
@@ -278,7 +284,8 @@ export const updateProduct = async (req, res, next) => {
     }
 
     // Process uploaded images
-    let imageUrls = [...(product.images || [])];
+    const oldImages = [...(product.images || [])];
+    let imageUrls = [...oldImages];
     if (req.files && req.files.length > 0) {
       const newImageUrls = req.files.map(file => `/uploads/products/${file.filename}`);
       // If existingImages is provided in body, it means we're replacing images
@@ -299,6 +306,28 @@ export const updateProduct = async (req, res, next) => {
         ? req.body.existingImages 
         : req.body.existingImages.split(',').filter(Boolean);
       imageUrls = existingImages;
+    }
+
+    // Delete removed image files from filesystem
+    const removedImages = oldImages.filter(img => !imageUrls.includes(img));
+    if (removedImages.length > 0) {
+      const uploadsDir = path.join(__dirname, '../../uploads/products');
+      removedImages.forEach(imageUrl => {
+        // Extract filename from URL (e.g., /uploads/products/filename.jpg -> filename.jpg)
+        const filename = imageUrl.replace('/uploads/products/', '');
+        const filePath = path.join(uploadsDir, filename);
+        
+        // Delete file if it exists
+        if (fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+            console.log(`Deleted image file: ${filename}`);
+          } catch (error) {
+            console.error(`Error deleting image file ${filename}:`, error);
+            // Don't fail the request if file deletion fails
+          }
+        }
+      });
     }
 
     // Handle mainImageIndex
@@ -361,6 +390,27 @@ export const deleteProduct = async (req, res, next) => {
           error: "Not authorized to delete this product",
         });
       }
+    }
+
+    // Delete all product images from filesystem
+    if (product.images && product.images.length > 0) {
+      const uploadsDir = path.join(__dirname, '../../uploads/products');
+      product.images.forEach(imageUrl => {
+        // Extract filename from URL (e.g., /uploads/products/filename.jpg -> filename.jpg)
+        const filename = imageUrl.replace('/uploads/products/', '');
+        const filePath = path.join(uploadsDir, filename);
+        
+        // Delete file if it exists
+        if (fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+            console.log(`Deleted image file: ${filename}`);
+          } catch (error) {
+            console.error(`Error deleting image file ${filename}:`, error);
+            // Don't fail the request if file deletion fails
+          }
+        }
+      });
     }
 
     await Product.findByIdAndDelete(req.params.id);
