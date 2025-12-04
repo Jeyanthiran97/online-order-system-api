@@ -1,6 +1,7 @@
 import Product from "../models/Product.js";
 import Seller from "../models/Seller.js";
 import Category from "../models/Category.js";
+import { extractPublicId, deleteImagesFromCloudinary, normalizeCloudinaryUrl } from "../config/cloudinary.js";
 
 export const createProduct = async (req, res, next) => {
   try {
@@ -34,6 +35,42 @@ export const createProduct = async (req, res, next) => {
       // Handle comma-separated string
       imageUrls = req.body.images.split(',').filter(Boolean);
     }
+
+    // Deduplicate images by public ID (to prevent duplicate images)
+    const seenPublicIds = new Set();
+    const deduplicatedImages = [];
+    
+    for (const url of imageUrls) {
+      if (!url) continue; // Skip empty URLs
+      
+      const publicId = extractPublicId(url);
+      if (publicId) {
+        // Use public ID for deduplication (most reliable)
+        if (!seenPublicIds.has(publicId)) {
+          seenPublicIds.add(publicId);
+          deduplicatedImages.push(url);
+        }
+      } else {
+        // If we can't extract public ID, use normalized URL-based deduplication
+        const normalizedUrl = normalizeCloudinaryUrl(url);
+        if (normalizedUrl) {
+          const isDuplicate = deduplicatedImages.some(img => {
+            const normalizedExisting = normalizeCloudinaryUrl(img);
+            return normalizedExisting === normalizedUrl;
+          });
+          if (!isDuplicate) {
+            deduplicatedImages.push(url);
+          }
+        } else {
+          // Fallback: simple URL comparison
+          if (!deduplicatedImages.includes(url)) {
+            deduplicatedImages.push(url);
+          }
+        }
+      }
+    }
+    
+    imageUrls = deduplicatedImages;
 
     // Validate mainImageIndex
     let mainIdx = mainImageIndex ? parseInt(mainImageIndex, 10) : 0;
@@ -282,21 +319,135 @@ export const updateProduct = async (req, res, next) => {
 
     // Process image URLs from request body (will come from Cloudinary)
     let imageUrls = [];
-    if (req.body.images && Array.isArray(req.body.images)) {
-      imageUrls = req.body.images;
-    } else if (req.body.images && typeof req.body.images === 'string') {
-      // Handle comma-separated string
-      imageUrls = req.body.images.split(',').filter(Boolean);
+    
+    // If images field is explicitly provided (even if empty array), use it
+    // This allows removing all images by sending an empty array
+    if (req.body.hasOwnProperty('images')) {
+      if (Array.isArray(req.body.images)) {
+        imageUrls = req.body.images; // Can be empty array to remove all images
+      } else if (typeof req.body.images === 'string') {
+        // Handle comma-separated string
+        imageUrls = req.body.images.split(',').filter(Boolean);
+      }
     } else if (req.body.existingImages) {
-      // Handle existing images (for updates where we want to keep some images)
+      // Only use existingImages if images field was not provided
       if (Array.isArray(req.body.existingImages)) {
         imageUrls = req.body.existingImages;
       } else {
         imageUrls = req.body.existingImages.split(',').filter(Boolean);
       }
     } else {
-      // Keep existing images if no new images provided
+      // Keep existing images only if images field was not provided at all
       imageUrls = [...(product.images || [])];
+    }
+
+    // Log received images for debugging
+    console.log('Received images for update:', imageUrls.length, 'images');
+    console.log('Existing product images:', (product.images || []).length, 'images');
+
+    // Deduplicate images by public ID (to prevent duplicate images)
+    // This is critical to prevent duplicates from multiplying on each update
+    const seenPublicIds = new Set();
+    const seenUrls = new Set(); // Also track URLs as fallback
+    const deduplicatedImages = [];
+    let duplicateCount = 0;
+    
+    for (const url of imageUrls) {
+      if (!url || typeof url !== 'string' || url.trim() === '') continue; // Skip empty/invalid URLs
+      
+      const publicId = extractPublicId(url);
+      const normalizedUrl = normalizeCloudinaryUrl(url);
+      
+      // Check for duplicates using public ID (most reliable)
+      if (publicId) {
+        if (!seenPublicIds.has(publicId)) {
+          seenPublicIds.add(publicId);
+          deduplicatedImages.push(url);
+        } else {
+          duplicateCount++;
+          console.log('Duplicate image detected by public ID:', publicId, 'URL:', url);
+        }
+      } else if (normalizedUrl) {
+        // Fallback: use normalized URL for deduplication
+        if (!seenUrls.has(normalizedUrl)) {
+          seenUrls.add(normalizedUrl);
+          deduplicatedImages.push(url);
+        } else {
+          duplicateCount++;
+          console.log('Duplicate image detected by normalized URL:', normalizedUrl);
+        }
+      } else {
+        // Last resort: simple URL comparison
+        if (!seenUrls.has(url)) {
+          seenUrls.add(url);
+          deduplicatedImages.push(url);
+        } else {
+          duplicateCount++;
+          console.log('Duplicate image detected by URL:', url);
+        }
+      }
+    }
+    
+    imageUrls = deduplicatedImages;
+    
+    if (duplicateCount > 0) {
+      console.log(`Removed ${duplicateCount} duplicate image(s) during deduplication`);
+    }
+    console.log('After deduplication:', imageUrls.length, 'unique images (was', imageUrls.length + duplicateCount, 'before deduplication)');
+
+    // Validate image count after deduplication
+    if (imageUrls.length > 5) {
+      return res.status(400).json({
+        success: false,
+        error: `Maximum 5 images allowed per product. You have ${imageUrls.length} unique images.`,
+      });
+    }
+
+    // Delete removed images from Cloudinary
+    const existingImages = product.images || [];
+    
+    // Extract public IDs for comparison (more reliable than URL comparison)
+    const existingPublicIds = existingImages
+      .map((url) => extractPublicId(url))
+      .filter(Boolean);
+    const finalPublicIds = imageUrls
+      .map((url) => extractPublicId(url))
+      .filter(Boolean);
+    
+    // Find images that were removed by comparing public IDs
+    const publicIdsToDelete = existingPublicIds.filter(
+      (publicId) => !finalPublicIds.includes(publicId)
+    );
+    
+    // Also find the original URLs for logging purposes
+    const imagesToDelete = existingImages.filter((img) => {
+      const publicId = extractPublicId(img);
+      return publicId && publicIdsToDelete.includes(publicId);
+    });
+
+    // Delete removed images from Cloudinary
+    if (publicIdsToDelete.length > 0) {
+      console.log(`Deleting ${publicIdsToDelete.length} image(s) from Cloudinary:`, publicIdsToDelete);
+      console.log('Image URLs to delete:', imagesToDelete);
+      
+      // Delete images from Cloudinary (non-blocking)
+      deleteImagesFromCloudinary(publicIdsToDelete)
+        .then((result) => {
+          if (result.success) {
+            const deletedCount = Object.keys(result.deleted || {}).length;
+            const notFoundCount = (result.notFound || []).length;
+            console.log(`Successfully deleted ${deletedCount} image(s) from Cloudinary`);
+            if (notFoundCount > 0) {
+              console.log(`${notFoundCount} image(s) were not found in Cloudinary (may have been already deleted)`);
+            }
+          } else {
+            console.error('Failed to delete images from Cloudinary:', result.error);
+          }
+        })
+        .catch((error) => {
+          console.error('Error deleting images from Cloudinary:', error);
+          // Don't fail the update if image deletion fails
+        });
     }
 
     // Handle mainImageIndex
@@ -309,12 +460,21 @@ export const updateProduct = async (req, res, next) => {
       }
     }
 
-    // Update images in request body
+    // Update images in request body - explicitly set images array to ensure replacement
     req.body.images = imageUrls;
+    
+    // Remove existingImages from body if present (we only use images field)
+    delete req.body.existingImages;
+
+    // Use $set operator to ensure images array is replaced, not merged
+    const updateData = {
+      ...req.body,
+      images: imageUrls, // Explicitly set images array
+    };
 
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      { $set: updateData },
       { new: true, runValidators: true }
     );
 
@@ -361,7 +521,20 @@ export const deleteProduct = async (req, res, next) => {
       }
     }
 
-    // Note: Image deletion from Cloudinary will be handled separately
+    // Delete images from Cloudinary
+    if (product.images && product.images.length > 0) {
+      const publicIds = product.images
+        .map((url) => extractPublicId(url))
+        .filter(Boolean);
+      
+      if (publicIds.length > 0) {
+        // Delete images from Cloudinary (non-blocking)
+        deleteImagesFromCloudinary(publicIds).catch((error) => {
+          console.error('Error deleting images from Cloudinary:', error);
+          // Don't fail the deletion if image deletion fails
+        });
+      }
+    }
 
     await Product.findByIdAndDelete(req.params.id);
 
