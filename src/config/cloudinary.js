@@ -46,6 +46,41 @@ export const extractPublicId = (url) => {
   return null;
 };
 
+// Helper function to normalize Cloudinary URL for comparison
+// Removes version numbers and transformations to get a consistent format for deduplication
+export const normalizeCloudinaryUrl = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  
+  try {
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl) return null;
+    
+    // If it's not a Cloudinary URL, return trimmed URL as is
+    if (!trimmedUrl.includes('cloudinary.com')) {
+      return trimmedUrl;
+    }
+    
+    let normalized = trimmedUrl;
+    
+    // Remove version number from URL
+    // Patterns: /upload/v1234567890/ -> /upload/
+    //          /upload/v1234567890  -> /upload/
+    normalized = normalized.replace(/\/upload\/v\d+(\/|$)/g, '/upload/');
+    
+    // Remove query parameters (transformations) by splitting on '?'
+    normalized = normalized.split('?')[0];
+    
+    // Remove hash fragments
+    normalized = normalized.split('#')[0];
+    
+    return normalized;
+  } catch (error) {
+    // If normalization fails, return trimmed original
+    console.warn('Failed to normalize Cloudinary URL:', url, error.message);
+    return url.trim();
+  }
+};
+
 // Helper function to delete image from Cloudinary
 export const deleteImageFromCloudinary = async (publicId) => {
   try {
