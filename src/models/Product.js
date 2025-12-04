@@ -37,6 +37,12 @@ const productSchema = new mongoose.Schema({
     max: [5, 'Rating must be between 0 and 5'],
     default: 0
   },
+  discount: {
+    type: Number,
+    min: [0, 'Discount must be between 0 and 100'],
+    max: [100, 'Discount must be between 0 and 100'],
+    default: 0
+  },
   images: {
     type: [String],
     default: [],
