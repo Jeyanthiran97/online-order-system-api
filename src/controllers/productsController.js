@@ -1,30 +1,6 @@
 import Product from "../models/Product.js";
 import Seller from "../models/Seller.js";
 import Category from "../models/Category.js";
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Helper function to get uploads directory path
-// Handles both regular servers and serverless environments
-const getUploadsDir = () => {
-  // Check if we're in a serverless environment
-  const isServerless = process.env.AWS_LAMBDA_FUNCTION_NAME || 
-                       process.env.VERCEL || 
-                       process.env.LAMBDA_TASK_ROOT ||
-                       !fs.existsSync(path.join(__dirname, '../../uploads'));
-  
-  if (isServerless) {
-    // Use /tmp for serverless environments
-    return path.join('/tmp', 'uploads', 'products');
-  } else {
-    // Use project directory for local/regular server environments
-    return path.join(__dirname, '../../uploads/products');
-  }
-};
 
 export const createProduct = async (req, res, next) => {
   try {
@@ -50,10 +26,13 @@ export const createProduct = async (req, res, next) => {
       });
     }
 
-    // Process uploaded images
+    // Process image URLs from request body (will come from Cloudinary)
     let imageUrls = [];
-    if (req.files && req.files.length > 0) {
-      imageUrls = req.files.map(file => `/uploads/products/${file.filename}`);
+    if (req.body.images && Array.isArray(req.body.images)) {
+      imageUrls = req.body.images;
+    } else if (req.body.images && typeof req.body.images === 'string') {
+      // Handle comma-separated string
+      imageUrls = req.body.images.split(',').filter(Boolean);
     }
 
     // Validate mainImageIndex
@@ -301,51 +280,23 @@ export const updateProduct = async (req, res, next) => {
       req.body.category = req.body.category.toLowerCase().trim();
     }
 
-    // Process uploaded images
-    const oldImages = [...(product.images || [])];
-    let imageUrls = [...oldImages];
-    if (req.files && req.files.length > 0) {
-      const newImageUrls = req.files.map(file => `/uploads/products/${file.filename}`);
-      // If existingImages is provided in body, it means we're replacing images
-      // Otherwise, append new images (up to 5 total)
-      if (req.body.existingImages) {
-        // Parse existing images from body (comma-separated string or array)
-        const existingImages = Array.isArray(req.body.existingImages) 
-          ? req.body.existingImages 
-          : req.body.existingImages.split(',').filter(Boolean);
-        imageUrls = [...existingImages, ...newImageUrls].slice(0, 5);
-      } else {
-        // Append new images to existing ones
-        imageUrls = [...imageUrls, ...newImageUrls].slice(0, 5);
-      }
+    // Process image URLs from request body (will come from Cloudinary)
+    let imageUrls = [];
+    if (req.body.images && Array.isArray(req.body.images)) {
+      imageUrls = req.body.images;
+    } else if (req.body.images && typeof req.body.images === 'string') {
+      // Handle comma-separated string
+      imageUrls = req.body.images.split(',').filter(Boolean);
     } else if (req.body.existingImages) {
-      // No new files, but existing images were updated (removed some)
-      const existingImages = Array.isArray(req.body.existingImages) 
-        ? req.body.existingImages 
-        : req.body.existingImages.split(',').filter(Boolean);
-      imageUrls = existingImages;
-    }
-
-    // Delete removed image files from filesystem
-    const removedImages = oldImages.filter(img => !imageUrls.includes(img));
-    if (removedImages.length > 0) {
-      const uploadsDir = getUploadsDir();
-      removedImages.forEach(imageUrl => {
-        // Extract filename from URL (e.g., /uploads/products/filename.jpg -> filename.jpg)
-        const filename = imageUrl.replace('/uploads/products/', '');
-        const filePath = path.join(uploadsDir, filename);
-        
-        // Delete file if it exists
-        if (fs.existsSync(filePath)) {
-          try {
-            fs.unlinkSync(filePath);
-            console.log(`Deleted image file: ${filename}`);
-          } catch (error) {
-            console.error(`Error deleting image file ${filename}:`, error);
-            // Don't fail the request if file deletion fails
-          }
-        }
-      });
+      // Handle existing images (for updates where we want to keep some images)
+      if (Array.isArray(req.body.existingImages)) {
+        imageUrls = req.body.existingImages;
+      } else {
+        imageUrls = req.body.existingImages.split(',').filter(Boolean);
+      }
+    } else {
+      // Keep existing images if no new images provided
+      imageUrls = [...(product.images || [])];
     }
 
     // Handle mainImageIndex
@@ -410,26 +361,7 @@ export const deleteProduct = async (req, res, next) => {
       }
     }
 
-    // Delete all product images from filesystem
-    if (product.images && product.images.length > 0) {
-      const uploadsDir = getUploadsDir();
-      product.images.forEach(imageUrl => {
-        // Extract filename from URL (e.g., /uploads/products/filename.jpg -> filename.jpg)
-        const filename = imageUrl.replace('/uploads/products/', '');
-        const filePath = path.join(uploadsDir, filename);
-        
-        // Delete file if it exists
-        if (fs.existsSync(filePath)) {
-          try {
-            fs.unlinkSync(filePath);
-            console.log(`Deleted image file: ${filename}`);
-          } catch (error) {
-            console.error(`Error deleting image file ${filename}:`, error);
-            // Don't fail the request if file deletion fails
-          }
-        }
-      });
-    }
+    // Note: Image deletion from Cloudinary will be handled separately
 
     await Product.findByIdAndDelete(req.params.id);
 
