@@ -157,6 +157,8 @@ const seedSampleData = async () => {
       price: 300000, // LKR
       stock: 50,
       category: categoryElectronics.name,
+      images: [],
+      mainImageIndex: 0,
     });
 
     const product2 = await Product.create({
@@ -166,6 +168,8 @@ const seedSampleData = async () => {
       price: 150000, // LKR
       stock: 100,
       category: categoryElectronics.name,
+      images: [],
+      mainImageIndex: 0,
     });
 
     const product3 = await Product.create({
@@ -175,6 +179,8 @@ const seedSampleData = async () => {
       price: 9000, // LKR
       stock: 200,
       category: categoryElectronics.name,
+      images: [],
+      mainImageIndex: 0,
     });
 
     const product4 = await Product.create({
@@ -184,6 +190,8 @@ const seedSampleData = async () => {
       price: 3800, // LKR
       stock: 150,
       category: categoryClothing.name,
+      images: [],
+      mainImageIndex: 0,
     });
 
     const product5 = await Product.create({
@@ -193,6 +201,8 @@ const seedSampleData = async () => {
       price: 4500, // LKR
       stock: 80,
       category: categoryClothing.name,
+      images: [],
+      mainImageIndex: 0,
     });
 
     const product6 = await Product.create({
@@ -202,9 +212,390 @@ const seedSampleData = async () => {
       price: 4600, // LKR
       stock: 60,
       category: categoryClothing.name,
+      images: [],
+      mainImageIndex: 0,
     });
 
-    console.log("Created 6 products");
+    // Add more electronics products
+    const product7 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Tablet",
+      description: "10-inch tablet with high-resolution display",
+      price: 85000, // LKR
+      stock: 30,
+      category: categoryElectronics.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product8 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Keyboard",
+      description: "Mechanical gaming keyboard",
+      price: 12000, // LKR
+      stock: 75,
+      category: categoryElectronics.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product9 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Monitor",
+      description: "27-inch 4K monitor",
+      price: 95000, // LKR
+      stock: 25,
+      category: categoryElectronics.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product10 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Headphones",
+      description: "Wireless noise-cancelling headphones",
+      price: 25000, // LKR
+      stock: 40,
+      category: categoryElectronics.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product11 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Webcam",
+      description: "HD webcam for video calls",
+      price: 15000, // LKR
+      stock: 50,
+      category: categoryElectronics.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product12 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "USB Drive",
+      description: "64GB USB 3.0 flash drive",
+      price: 2500, // LKR
+      stock: 200,
+      category: categoryElectronics.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product13 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Power Bank",
+      description: "20000mAh portable power bank",
+      price: 5500, // LKR
+      stock: 80,
+      category: categoryElectronics.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product14 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Smart Watch",
+      description: "Fitness tracking smartwatch",
+      price: 35000, // LKR
+      stock: 35,
+      category: categoryElectronics.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    // Add more clothing products
+    const product15 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Hoodie",
+      description: "Warm and cozy hoodie",
+      price: 5500, // LKR
+      stock: 90,
+      category: categoryClothing.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product16 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Dress Shirt",
+      description: "Formal dress shirt",
+      price: 4200, // LKR
+      stock: 70,
+      category: categoryClothing.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product17 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Jacket",
+      description: "Winter jacket",
+      price: 8500, // LKR
+      stock: 45,
+      category: categoryClothing.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product18 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Shorts",
+      description: "Casual summer shorts",
+      price: 3200, // LKR
+      stock: 100,
+      category: categoryClothing.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product19 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Cap",
+      description: "Baseball cap",
+      price: 1800, // LKR
+      stock: 120,
+      category: categoryClothing.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product20 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Socks",
+      description: "Pack of 5 cotton socks",
+      price: 1200, // LKR
+      stock: 150,
+      category: categoryClothing.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    // Add food products
+    const product21 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Rice",
+      description: "Premium basmati rice 5kg",
+      price: 1200, // LKR
+      stock: 200,
+      category: categoryFood.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product22 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Cooking Oil",
+      description: "Vegetable cooking oil 1L",
+      price: 450, // LKR
+      stock: 300,
+      category: categoryFood.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product23 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Tea",
+      description: "Ceylon tea 500g",
+      price: 650, // LKR
+      stock: 180,
+      category: categoryFood.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product24 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Sugar",
+      description: "White sugar 1kg",
+      price: 280, // LKR
+      stock: 250,
+      category: categoryFood.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product25 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Flour",
+      description: "Wheat flour 1kg",
+      price: 320, // LKR
+      stock: 220,
+      category: categoryFood.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product26 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Spices Pack",
+      description: "Assorted spices collection",
+      price: 1500, // LKR
+      stock: 100,
+      category: categoryFood.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    // Add book products
+    const product27 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Programming Book",
+      description: "Learn JavaScript programming",
+      price: 3500, // LKR
+      stock: 50,
+      category: categoryBooks.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product28 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Novel",
+      description: "Bestselling fiction novel",
+      price: 1800, // LKR
+      stock: 60,
+      category: categoryBooks.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product29 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Cookbook",
+      description: "Traditional recipes cookbook",
+      price: 2800, // LKR
+      stock: 40,
+      category: categoryBooks.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product30 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "History Book",
+      description: "World history encyclopedia",
+      price: 4500, // LKR
+      stock: 30,
+      category: categoryBooks.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product31 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Science Book",
+      description: "Introduction to physics",
+      price: 3200, // LKR
+      stock: 35,
+      category: categoryBooks.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    // Add other category products
+    const product32 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Backpack",
+      description: "Durable travel backpack",
+      price: 6500, // LKR
+      stock: 55,
+      category: categoryOther.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product33 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Water Bottle",
+      description: "Stainless steel water bottle",
+      price: 2800, // LKR
+      stock: 85,
+      category: categoryOther.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product34 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Umbrella",
+      description: "Windproof travel umbrella",
+      price: 2200, // LKR
+      stock: 70,
+      category: categoryOther.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product35 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Wallet",
+      description: "Leather wallet",
+      price: 3500, // LKR
+      stock: 65,
+      category: categoryOther.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product36 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Sunglasses",
+      description: "UV protection sunglasses",
+      price: 4800, // LKR
+      stock: 50,
+      category: categoryOther.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product37 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Watch",
+      description: "Classic analog watch",
+      price: 12000, // LKR
+      stock: 25,
+      category: categoryOther.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product38 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Desk Lamp",
+      description: "LED desk lamp",
+      price: 5500, // LKR
+      stock: 40,
+      category: categoryOther.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product39 = await Product.create({
+      sellerId: sellerProfile1._id,
+      name: "Notebook",
+      description: "A5 ruled notebook",
+      price: 850, // LKR
+      stock: 150,
+      category: categoryOther.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    const product40 = await Product.create({
+      sellerId: sellerProfile2._id,
+      name: "Pen Set",
+      description: "Premium pen set",
+      price: 1800, // LKR
+      stock: 90,
+      category: categoryOther.name,
+      images: [],
+      mainImageIndex: 0,
+    });
+
+    console.log("Created 40 products");
 
     // Create sample orders
     const order1 = await Order.create({
@@ -295,7 +686,7 @@ const seedSampleData = async () => {
     console.log("- 2 Approved Sellers");
     console.log("- 2 Approved Deliverers");
     console.log("- 5 Categories");
-    console.log("- 6 Products");
+    console.log("- 40 Products");
     console.log("- 4 Orders");
     console.log("- 3 Deliveries");
 
