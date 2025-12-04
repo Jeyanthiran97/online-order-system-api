@@ -19,14 +19,14 @@ const seedSampleData = async () => {
 
     // Create sample customers
     const customer1 = await User.create({
-      email: "customer1@example.com",
+      email: "customer@gmail.com",
       password: "Customer@123",
       role: "customer",
       isActive: true,
     });
 
     const customer2 = await User.create({
-      email: "customer2@example.com",
+      email: "customer1@gmail.com",
       password: "Customer@123",
       role: "customer",
       isActive: true,
@@ -34,30 +34,30 @@ const seedSampleData = async () => {
 
     const customerProfile1 = await Customer.create({
       userId: customer1._id,
-      fullName: "John Doe",
-      phone: "+1234567890",
-      address: "123 Main St, City, Country",
+      fullName: "Raj majo",
+      phone: "0775257454",
+      address: "123 Main St, Kilinochchi, SL",
     });
 
     const customerProfile2 = await Customer.create({
       userId: customer2._id,
       fullName: "Jane Smith",
-      phone: "+0987654321",
-      address: "456 Oak Ave, City, Country",
+      phone: "07652574856",
+      address: "456 Oak Ave, City, Srilanka",
     });
 
     console.log("Created 2 customers");
 
     // Create sample sellers
     const seller1 = await User.create({
-      email: "seller1@example.com",
+      email: "seller@gmail.com",
       password: "Seller@123",
       role: "seller",
       isActive: true,
     });
 
     const seller2 = await User.create({
-      email: "seller2@example.com",
+      email: "seller1@gmail.com",
       password: "Seller@123",
       role: "seller",
       isActive: true,
@@ -83,14 +83,14 @@ const seedSampleData = async () => {
 
     // Create sample deliverers
     const deliverer1 = await User.create({
-      email: "deliverer1@example.com",
+      email: "deliverer@gmail.com",
       password: "Deliverer@123",
       role: "deliverer",
       isActive: true,
     });
 
     const deliverer2 = await User.create({
-      email: "deliverer2@example.com",
+      email: "deliverer1@gmail.com",
       password: "Deliverer@123",
       role: "deliverer",
       isActive: true,
@@ -163,7 +163,7 @@ const seedSampleData = async () => {
       sellerId: sellerProfile1._id,
       name: "Smartphone",
       description: "Latest smartphone with advanced features",
-      price: 210000, // LKR
+      price: 150000, // LKR
       stock: 100,
       category: categoryElectronics.name,
     });
@@ -181,7 +181,7 @@ const seedSampleData = async () => {
       sellerId: sellerProfile2._id,
       name: "T-Shirt",
       description: "Cotton t-shirt, comfortable and stylish",
-      price: 6000, // LKR
+      price: 3800, // LKR
       stock: 150,
       category: categoryClothing.name,
     });
@@ -190,7 +190,7 @@ const seedSampleData = async () => {
       sellerId: sellerProfile2._id,
       name: "Jeans",
       description: "Classic blue jeans",
-      price: 15000, // LKR
+      price: 4500, // LKR
       stock: 80,
       category: categoryClothing.name,
     });
@@ -199,7 +199,7 @@ const seedSampleData = async () => {
       sellerId: sellerProfile2._id,
       name: "Sneakers",
       description: "Comfortable running sneakers",
-      price: 24000, // LKR
+      price: 4600, // LKR
       stock: 60,
       category: categoryClothing.name,
     });
