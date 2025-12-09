@@ -36,6 +36,9 @@ const orderSchema = new mongoose.Schema({
   assignedDelivererId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Deliverer'
+  },
+  stripeSessionId: {
+    type: String
   }
 }, {
   timestamps: true

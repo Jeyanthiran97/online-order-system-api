@@ -4,6 +4,7 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import routes from './routes/index.js';
 import errorMiddleware from './middleware/errorMiddleware.js';
+import { handleWebhook } from './controllers/paymentController.js';
 
 dotenv.config();
 
@@ -26,7 +27,7 @@ app.use(cors({
       }
       return callback(null, true);
     }
-    
+
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -35,6 +36,9 @@ app.use(cors({
   },
   credentials: true,
 }));
+
+// Stripe webhook needs raw body, so we mount it before express.json()
+app.post('/api/payments/webhook', express.raw({ type: 'application/json' }), handleWebhook);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
