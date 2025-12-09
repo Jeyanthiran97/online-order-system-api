@@ -5,17 +5,12 @@ import Customer from "../models/Customer.js";
 import Seller from "../models/Seller.js";
 import Deliverer from "../models/Deliverer.js";
 import Delivery from "../models/Delivery.js";
+import Cart from "../models/Cart.js";
+import Payment from "../models/Payment.js";
 
 export const createOrder = async (req, res, next) => {
   try {
-    const { products } = req.body;
-
-    if (!products || !Array.isArray(products) || products.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: "Products array is required",
-      });
-    }
+    const { products, paymentMethod = 'dummy', fromCart = false } = req.body;
 
     const customer = await Customer.findOne({ userId: req.user._id });
     if (!customer) {
@@ -25,43 +20,141 @@ export const createOrder = async (req, res, next) => {
       });
     }
 
+    let orderProducts = [];
     let totalPrice = 0;
-    const orderProducts = [];
 
-    for (const item of products) {
-      const product = await Product.findById(item.productId);
-      if (!product) {
-        return res.status(404).json({
-          success: false,
-          error: `Product ${item.productId} not found`,
-        });
-      }
-
-      if (product.stock < item.quantity) {
+    // If creating from cart, get items from cart
+    if (fromCart) {
+      const cart = await Cart.findOne({ customerId: customer._id })
+        .populate('items.productId');
+      
+      if (!cart || !cart.items || cart.items.length === 0) {
         return res.status(400).json({
           success: false,
-          error: `Insufficient stock for product ${product.name}`,
+          error: "Cart is empty",
         });
       }
 
-      const itemTotal = product.price * item.quantity;
-      totalPrice += itemTotal;
+      // Convert cart items to order products
+      for (const cartItem of cart.items) {
+        const product = await Product.findById(cartItem.productId);
+        if (!product) {
+          return res.status(404).json({
+            success: false,
+            error: `Product ${cartItem.productId} not found`,
+          });
+        }
 
-      orderProducts.push({
-        productId: product._id,
-        quantity: item.quantity,
-        price: product.price,
-      });
+        // Verify product belongs to an approved seller
+        const seller = await Seller.findById(product.sellerId);
+        if (!seller || seller.status !== "approved") {
+          return res.status(400).json({
+            success: false,
+            error: `Product ${product.name} is not available (seller not approved)`,
+          });
+        }
 
-      product.stock -= item.quantity;
-      await product.save();
+        if (product.stock < cartItem.quantity) {
+          return res.status(400).json({
+            success: false,
+            error: `Insufficient stock for product ${product.name}. Available: ${product.stock}`,
+          });
+        }
+
+        orderProducts.push({
+          productId: product._id,
+          quantity: cartItem.quantity,
+          price: product.price,
+        });
+
+        totalPrice += product.price * cartItem.quantity;
+      }
+    } else {
+      // Create order from provided products array
+      if (!products || !Array.isArray(products) || products.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Products array is required",
+        });
+      }
+
+      for (const item of products) {
+        if (!item.productId || !item.quantity || item.quantity < 1) {
+          return res.status(400).json({
+            success: false,
+            error: "Each product must have a valid productId and quantity (min: 1)",
+          });
+        }
+
+        const product = await Product.findById(item.productId).populate("sellerId");
+        if (!product) {
+          return res.status(404).json({
+            success: false,
+            error: `Product ${item.productId} not found`,
+          });
+        }
+
+        // Verify product belongs to an approved seller
+        const seller = await Seller.findById(product.sellerId);
+        if (!seller || seller.status !== "approved") {
+          return res.status(400).json({
+            success: false,
+            error: `Product ${product.name} is not available (seller not approved)`,
+          });
+        }
+
+        if (product.stock < item.quantity) {
+          return res.status(400).json({
+            success: false,
+            error: `Insufficient stock for product ${product.name}. Available: ${product.stock}`,
+          });
+        }
+
+        const itemTotal = product.price * item.quantity;
+        totalPrice += itemTotal;
+
+        orderProducts.push({
+          productId: product._id,
+          quantity: item.quantity,
+          price: product.price,
+        });
+      }
     }
 
+    // Create order
     const order = await Order.create({
       customerId: customer._id,
       products: orderProducts,
       totalPrice,
     });
+
+    // Process payment (dummy payment - always succeeds)
+    const payment = await Payment.create({
+      orderId: order._id,
+      customerId: customer._id,
+      amount: totalPrice,
+      paymentMethod: paymentMethod || 'dummy',
+      paymentStatus: 'completed',
+      paymentDate: new Date(),
+    });
+
+    // Decrement stock for all products
+    for (const item of orderProducts) {
+      const product = await Product.findById(item.productId);
+      if (product) {
+        product.stock -= item.quantity;
+        await product.save();
+      }
+    }
+
+    // Clear cart if order was created from cart
+    if (fromCart) {
+      const cart = await Cart.findOne({ customerId: customer._id });
+      if (cart) {
+        cart.items = [];
+        await cart.save();
+      }
+    }
 
     const populatedOrder = await Order.findById(order._id)
       .populate("products.productId", "name description price")
@@ -69,7 +162,15 @@ export const createOrder = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      data: populatedOrder,
+      data: {
+        ...populatedOrder.toObject(),
+        payment: {
+          transactionId: payment.transactionId,
+          paymentStatus: payment.paymentStatus,
+          paymentMethod: payment.paymentMethod,
+          amount: payment.amount,
+        },
+      },
     });
   } catch (error) {
     next(error);
@@ -334,8 +435,35 @@ export const updateOrder = async (req, res, next) => {
     }
 
     if (req.user.role === "seller") {
-      // Sellers can confirm pending orders
+      // Sellers can only confirm pending orders containing their products
       if (status === "confirmed" && order.status === "pending") {
+        // Verify seller owns at least one product in the order
+        const seller = await Seller.findOne({ userId: req.user._id });
+        if (!seller || seller.status !== "approved") {
+          return res.status(403).json({
+            success: false,
+            error: "Seller account not approved",
+          });
+        }
+
+        // Get seller's product IDs
+        const sellerProducts = await Product.find({
+          sellerId: seller._id,
+        }).select("_id");
+        const sellerProductIds = sellerProducts.map(p => p._id.toString());
+
+        // Check if order contains at least one of seller's products
+        const orderContainsSellerProducts = order.products.some(item =>
+          sellerProductIds.includes(item.productId.toString())
+        );
+
+        if (!orderContainsSellerProducts) {
+          return res.status(403).json({
+            success: false,
+            error: "Not authorized to confirm this order (order does not contain your products)",
+          });
+        }
+
         order.status = "confirmed";
         await order.save();
 
@@ -350,44 +478,15 @@ export const updateOrder = async (req, res, next) => {
         });
       }
 
-      // Sellers can ship confirmed orders (requires deliverer)
-      if (status === "shipped" && order.status === "confirmed") {
-        if (!order.assignedDelivererId) {
-          return res.status(400).json({
-            success: false,
-            error: "Cannot ship order without assigned deliverer",
-          });
-        }
-
-        order.status = "shipped";
-        await order.save();
-
-        // Update delivery status to in-transit
-        const delivery = await Delivery.findOne({ orderId: order._id });
-        if (delivery) {
-          delivery.status = "in-transit";
-          await delivery.save();
-        }
-
-        const populatedOrder = await Order.findById(order._id)
-          .populate("products.productId", "name description price")
-          .populate("customerId", "fullName phone address")
-          .populate("assignedDelivererId", "fullName");
-
-        return res.json({
-          success: true,
-          data: populatedOrder,
-        });
-      }
-
       return res.status(403).json({
         success: false,
-        error: "Not authorized to perform this action",
+        error: "Sellers can only confirm pending orders containing their products",
       });
     }
 
     if (req.user.role === "admin") {
       let hasChanges = false;
+      let newStatus = order.status;
 
       // Handle status change
       if (
@@ -412,7 +511,7 @@ export const updateOrder = async (req, res, next) => {
           });
         }
 
-        order.status = status;
+        newStatus = status;
         hasChanges = true;
 
         // If cancelling, restore stock
@@ -423,6 +522,16 @@ export const updateOrder = async (req, res, next) => {
               product.stock += item.quantity;
               await product.save();
             }
+          }
+        }
+
+        // If shipping, ensure deliverer is assigned
+        if (status === "shipped") {
+          if (!order.assignedDelivererId && !assignedDelivererId) {
+            return res.status(400).json({
+              success: false,
+              error: "Cannot ship order without assigned deliverer",
+            });
           }
         }
       }
@@ -446,32 +555,61 @@ export const updateOrder = async (req, res, next) => {
           });
         }
 
-        // If changing deliverer, update existing delivery or create new one
-        const existingDelivery = await Delivery.findOne({
+        // Find or create delivery record
+        let delivery = await Delivery.findOne({
           orderId: order._id,
         });
 
-        if (existingDelivery) {
+        if (delivery) {
           // Update existing delivery with new deliverer
-          existingDelivery.delivererId = assignedDelivererId;
-          if (existingDelivery.status === "delivered") {
+          if (delivery.status === "delivered") {
             return res.status(400).json({
               success: false,
               error: "Cannot change deliverer for already delivered order",
             });
           }
-          await existingDelivery.save();
+          delivery.delivererId = assignedDelivererId;
+          // Update delivery status based on order status
+          if (newStatus === "shipped" || order.status === "shipped") {
+            delivery.status = "in-transit";
+          }
+          await delivery.save();
         } else {
           // Create new delivery record
-          await Delivery.create({
+          delivery = await Delivery.create({
             orderId: order._id,
             delivererId: assignedDelivererId,
-            status: order.status === "shipped" ? "in-transit" : "pending",
+            status: newStatus === "shipped" || order.status === "shipped" ? "in-transit" : "pending",
           });
         }
 
         order.assignedDelivererId = assignedDelivererId;
         hasChanges = true;
+      }
+
+      // If status changed to shipped and deliverer is assigned, ensure delivery record exists and is in-transit
+      if (newStatus === "shipped" && order.assignedDelivererId) {
+        let delivery = await Delivery.findOne({
+          orderId: order._id,
+        });
+
+        if (!delivery) {
+          // Create delivery record if it doesn't exist
+          delivery = await Delivery.create({
+            orderId: order._id,
+            delivererId: order.assignedDelivererId,
+            status: "in-transit",
+          });
+        } else if (delivery.status !== "in-transit") {
+          // Update delivery status to in-transit if order is being shipped
+          delivery.status = "in-transit";
+          await delivery.save();
+        }
+      }
+
+      // Apply status change
+      if (hasChanges && newStatus !== order.status) {
+        order.status = newStatus;
       }
 
       // If no changes were made, return error

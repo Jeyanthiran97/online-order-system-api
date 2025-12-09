@@ -2,6 +2,7 @@ import express from "express";
 import authRoutes from "./authRoutes.js";
 import productsRoutes from "./productsRoutes.js";
 import ordersRoutes from "./ordersRoutes.js";
+import cartRoutes from "./cartRoutes.js";
 import deliveriesRoutes from "./deliveriesRoutes.js";
 import analyticsRoutes from "./analyticsRoutes.js";
 import usersRoutes from "./usersRoutes.js";
@@ -17,6 +18,9 @@ router.use("/auth", authRoutes);
 
 // Product routes
 router.use("/products", productsRoutes);
+
+// Cart routes
+router.use("/cart", cartRoutes);
 
 // Order routes
 router.use("/orders", ordersRoutes);
