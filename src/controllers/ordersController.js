@@ -10,7 +10,7 @@ import Payment from "../models/Payment.js";
 
 export const createOrder = async (req, res, next) => {
   try {
-    const { products, paymentMethod = 'dummy', fromCart = false } = req.body;
+    const { products, paymentMethod = 'dummy', fromCart = false, shippingAddress } = req.body;
 
     const customer = await Customer.findOne({ userId: req.user._id });
     if (!customer) {
@@ -126,6 +126,8 @@ export const createOrder = async (req, res, next) => {
       customerId: customer._id,
       products: orderProducts,
       totalPrice,
+      shippingAddress,
+      paymentMethod,
     });
 
     // Process payment (dummy payment - always succeeds)

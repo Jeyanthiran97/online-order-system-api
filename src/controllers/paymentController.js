@@ -135,8 +135,8 @@ export const handleWebhook = async (req, res) => {
         try {
             const order = await Order.findById(orderId);
             if (order) {
-                // order.status = 'confirmed'; // Keep as pending
-                // await order.save();
+                order.status = 'confirmed';
+                await order.save();
 
                 // Update Payment status
                 const payment = await Payment.findOne({ orderId: orderId });
@@ -192,8 +192,8 @@ export const verifyPayment = async (req, res) => {
 
         // Verify payment status
         if (session.payment_status === 'paid') {
-            // order.status = 'confirmed'; // Keep as pending for manual confirmation
-            // await order.save();
+            order.status = 'confirmed';
+            await order.save();
 
             // Update Payment status
             const payment = await Payment.findOne({ orderId: order._id });
@@ -212,11 +212,14 @@ export const verifyPayment = async (req, res) => {
             }
 
             // Clear user's cart
-            const cart = await import('../models/Cart.js').then(m => m.default.findOne({ customerId: req.user._id }));
-            if (cart) {
-                cart.items = [];
-                cart.totalPrice = 0;
-                await cart.save();
+            const customer = await import('../models/Customer.js').then(m => m.default.findOne({ userId: req.user._id }));
+            if (customer) {
+                const cart = await import('../models/Cart.js').then(m => m.default.findOne({ customerId: customer._id }));
+                if (cart) {
+                    cart.items = [];
+                    cart.totalPrice = 0;
+                    await cart.save();
+                }
             }
 
             return res.json({ success: true, message: 'Payment verified and order confirmed' });

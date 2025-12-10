@@ -19,7 +19,7 @@ const paymentSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['card', 'cash', 'dummy', 'stripe'],
+    enum: ['card', 'cash', 'dummy', 'stripe', 'cod'],
     default: 'dummy'
   },
   paymentStatus: {
