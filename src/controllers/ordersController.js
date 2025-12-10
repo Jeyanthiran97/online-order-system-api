@@ -27,7 +27,7 @@ export const createOrder = async (req, res, next) => {
     if (fromCart) {
       const cart = await Cart.findOne({ customerId: customer._id })
         .populate('items.productId');
-      
+
       if (!cart || !cart.items || cart.items.length === 0) {
         return res.status(400).json({
           success: false,
@@ -383,6 +383,78 @@ export const getOrders = async (req, res, next) => {
       totalPages,
       currentPage: page,
       data: orders,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate("products.productId", "name description price")
+      .populate("customerId", "fullName phone address")
+      .populate("assignedDelivererId", "fullName");
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: "Order not found",
+      });
+    }
+
+    // Check authorization
+    if (req.user.role === "customer") {
+      const customer = await Customer.findOne({ userId: req.user._id });
+      if (!customer || order.customerId._id.toString() !== customer._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          error: "Not authorized to view this order",
+        });
+      }
+    } else if (req.user.role === "seller") {
+      // Sellers can only view orders containing their products
+      const seller = await Seller.findOne({ userId: req.user._id });
+      if (!seller) {
+        return res.status(403).json({
+          success: false,
+          error: "Seller profile not found",
+        });
+      }
+
+      // Check if order contains any of seller's products
+      // We need to fetch the products to check sellerId since populate only gives us name/desc/price
+      // But wait, we can populate sellerId in the product
+      const orderWithSellerInfo = await Order.findById(req.params.id).populate({
+        path: 'products.productId',
+        select: 'sellerId'
+      });
+
+      const hasSellerProduct = orderWithSellerInfo.products.some(item =>
+        item.productId && item.productId.sellerId.toString() === seller._id.toString()
+      );
+
+      if (!hasSellerProduct) {
+        return res.status(403).json({
+          success: false,
+          error: "Not authorized to view this order",
+        });
+      }
+    } else if (req.user.role === "deliverer") {
+      const deliverer = await Deliverer.findOne({ userId: req.user._id });
+      if (!deliverer || (order.assignedDelivererId && order.assignedDelivererId._id.toString() !== deliverer._id.toString())) {
+        // Also allow if they are assigned via Delivery model? 
+        // For now, stick to assignedDelivererId on order
+        return res.status(403).json({
+          success: false,
+          error: "Not authorized to view this order",
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: order,
     });
   } catch (error) {
     next(error);

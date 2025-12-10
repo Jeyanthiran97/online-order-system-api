@@ -53,9 +53,15 @@ export const createCheckoutSession = async (req, res) => {
             });
         }
 
+        // 1.5 Find Customer
+        const customer = await import('../models/Customer.js').then(m => m.default.findOne({ userId: userId }));
+        if (!customer) {
+            return res.status(404).json({ error: 'Customer profile not found' });
+        }
+
         // 2. Create pending Order
         const order = new Order({
-            customerId: userId,
+            customerId: customer._id,
             products: orderProducts,
             totalPrice: totalAmount,
             status: 'pending',
@@ -66,7 +72,7 @@ export const createCheckoutSession = async (req, res) => {
         // 3. Create pending Payment
         const payment = new Payment({
             orderId: order._id,
-            customerId: userId,
+            customerId: customer._id,
             amount: totalAmount,
             paymentMethod: 'stripe',
             paymentStatus: 'pending'
@@ -123,8 +129,8 @@ export const handleWebhook = async (req, res) => {
         try {
             const order = await Order.findById(orderId);
             if (order) {
-                order.status = 'confirmed'; // Or 'paid' if you have that status
-                await order.save();
+                // order.status = 'confirmed'; // Keep as pending
+                // await order.save();
 
                 // Update Payment status
                 const payment = await Payment.findOne({ orderId: orderId });
@@ -149,4 +155,71 @@ export const handleWebhook = async (req, res) => {
     }
 
     res.json({ received: true });
+};
+
+export const verifyPayment = async (req, res) => {
+    try {
+        const { sessionId } = req.body;
+
+        if (!sessionId) {
+            return res.status(400).json({ error: 'Session ID is required' });
+        }
+
+        // Retrieve session from Stripe
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+        if (!session) {
+            return res.status(404).json({ error: 'Session not found' });
+        }
+
+        // Find order by session ID
+        const order = await Order.findOne({ stripeSessionId: sessionId });
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Check if already confirmed
+        if (order.status === 'confirmed' || order.status === 'paid') {
+            return res.json({ success: true, message: 'Order already confirmed' });
+        }
+
+        // Verify payment status
+        if (session.payment_status === 'paid') {
+            // order.status = 'confirmed'; // Keep as pending for manual confirmation
+            // await order.save();
+
+            // Update Payment status
+            const payment = await Payment.findOne({ orderId: order._id });
+            if (payment) {
+                payment.paymentStatus = 'completed';
+                payment.transactionId = session.payment_intent;
+                payment.paymentDate = new Date();
+                await payment.save();
+            }
+
+            // Decrease stock
+            for (const item of order.products) {
+                await Product.findByIdAndUpdate(item.productId, {
+                    $inc: { stock: -item.quantity }
+                });
+            }
+
+            // Clear user's cart
+            const cart = await import('../models/Cart.js').then(m => m.default.findOne({ customerId: req.user._id }));
+            if (cart) {
+                cart.items = [];
+                cart.totalPrice = 0;
+                await cart.save();
+            }
+
+            return res.json({ success: true, message: 'Payment verified and order confirmed' });
+        } else {
+            return res.status(400).json({ error: 'Payment not completed' });
+        }
+
+    } catch (error) {
+        console.error('Error verifying payment:', error);
+        res.status(500).json({ error: 'Failed to verify payment' });
+    }
 };

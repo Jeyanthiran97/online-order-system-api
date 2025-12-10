@@ -248,13 +248,15 @@ export const clearCart = async (req, res, next) => {
 
     const cart = await Cart.findOne({ customerId: customer._id });
     if (!cart) {
-      return res.status(404).json({
-        success: false,
-        error: 'Cart not found',
+      // If cart doesn't exist, it's effectively cleared
+      return res.json({
+        success: true,
+        data: { items: [], totalPrice: 0 },
       });
     }
 
     cart.items = [];
+    cart.totalPrice = 0; // Reset total price too
     await cart.save();
 
     res.json({
