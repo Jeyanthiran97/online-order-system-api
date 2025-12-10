@@ -39,6 +39,19 @@ const orderSchema = new mongoose.Schema({
   },
   stripeSessionId: {
     type: String
+  },
+  shippingAddress: {
+    fullName: { type: String, required: true },
+    streetAddress: { type: String, required: true },
+    city: { type: String, required: true },
+    district: { type: String, required: true },
+    postalCode: { type: String, required: true },
+    country: { type: String, default: "Sri Lanka" }
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['card', 'cod'],
+    required: true
   }
 }, {
   timestamps: true

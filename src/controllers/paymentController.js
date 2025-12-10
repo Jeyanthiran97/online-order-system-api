@@ -8,11 +8,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const createCheckoutSession = async (req, res) => {
     try {
-        const { items } = req.body;
+        const { items, shippingAddress } = req.body;
         const userId = req.user._id;
 
         if (!items || items.length === 0) {
             return res.status(400).json({ error: 'No items provided' });
+        }
+
+        if (!shippingAddress) {
+            return res.status(400).json({ error: 'Shipping address is required' });
         }
 
         // 1. Validate items and calculate total from DB to prevent price tampering
@@ -65,6 +69,8 @@ export const createCheckoutSession = async (req, res) => {
             products: orderProducts,
             totalPrice: totalAmount,
             status: 'pending',
+            shippingAddress: shippingAddress,
+            paymentMethod: 'card',
             stripeSessionId: '' // Will update after session creation
         });
         await order.save();
