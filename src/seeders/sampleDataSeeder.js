@@ -607,6 +607,15 @@ const seedSampleData = async () => {
       totalPrice: product1.price + product3.price * 2,
       status: "confirmed",
       assignedDelivererId: delivererProfile1._id,
+      paymentMethod: "card",
+      shippingAddress: {
+        fullName: customerProfile1.fullName,
+        streetAddress: customerProfile1.address,
+        city: "Kilinochchi",
+        district: "Kilinochchi",
+        postalCode: "44000",
+        country: "Sri Lanka"
+      }
     });
 
     // Update product stock
@@ -622,6 +631,15 @@ const seedSampleData = async () => {
       ],
       totalPrice: product2.price,
       status: "pending",
+      paymentMethod: "cod",
+      shippingAddress: {
+        fullName: customerProfile1.fullName,
+        streetAddress: customerProfile1.address,
+        city: "Kilinochchi",
+        district: "Kilinochchi",
+        postalCode: "44000",
+        country: "Sri Lanka"
+      }
     });
 
     product2.stock -= 1;
@@ -636,6 +654,15 @@ const seedSampleData = async () => {
       totalPrice: product4.price * 3 + product5.price,
       status: "shipped",
       assignedDelivererId: delivererProfile2._id,
+      paymentMethod: "card",
+      shippingAddress: {
+        fullName: customerProfile2.fullName,
+        streetAddress: customerProfile2.address,
+        city: "Colombo",
+        district: "Colombo",
+        postalCode: "00100",
+        country: "Sri Lanka"
+      }
     });
 
     product4.stock -= 3;
@@ -651,6 +678,15 @@ const seedSampleData = async () => {
       totalPrice: product6.price,
       status: "delivered",
       assignedDelivererId: delivererProfile1._id,
+      paymentMethod: "cod",
+      shippingAddress: {
+        fullName: customerProfile2.fullName,
+        streetAddress: customerProfile2.address,
+        city: "Colombo",
+        district: "Colombo",
+        postalCode: "00100",
+        country: "Sri Lanka"
+      }
     });
 
     product6.stock -= 1;
